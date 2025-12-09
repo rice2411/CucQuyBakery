@@ -1,6 +1,6 @@
 import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { Order, OrderStatus, PaymentStatus, ProductType } from '../types';
+import { Order, OrderStatus, PaymentStatus, ProductType, OrderItem } from '../types';
 import { DEFAULT_PRICES } from '../constants';
 
 export const fetchOrders = async (): Promise<Order[]> => {
@@ -35,10 +35,11 @@ export const fetchOrders = async (): Promise<Order[]> => {
       // Helper to generate a consistent image based on product type
       const getProductImage = (type: string) => {
         const t = (type || '').toLowerCase();
-        if (t.includes('family')) return 'https://images.unsplash.com/photo-1556910103-1c02745a30bf?auto=format&fit=crop&q=80&w=200';
-        if (t.includes('friend')) return 'https://images.unsplash.com/photo-1621236378699-8597f840b45a?auto=format&fit=crop&q=80&w=200';
-        if (t.includes('cookie')) return 'https://images.unsplash.com/photo-1499636138143-bd649025ebeb?auto=format&fit=crop&q=80&w=200';
-        if (t.includes('cake')) return 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=200';
+        if (t.includes('family') || t.includes('gia đình')) return 'https://images.unsplash.com/photo-1556910103-1c02745a30bf?auto=format&fit=crop&q=80&w=200';
+        if (t.includes('friend') || t.includes('tình bạn')) return 'https://images.unsplash.com/photo-1621236378699-8597f840b45a?auto=format&fit=crop&q=80&w=200';
+        if (t.includes('set') || t.includes('quà') || t.includes('gif')) return 'https://images.unsplash.com/photo-1549488352-22668e9e6c1c?auto=format&fit=crop&q=80&w=200';
+        if (t.includes('cookie') || t.includes('bánh')) return 'https://images.unsplash.com/photo-1499636138143-bd649025ebeb?auto=format&fit=crop&q=80&w=200';
+        if (t.includes('cake') || t.includes('kem')) return 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=200';
         return `https://placehold.co/200x200?text=${encodeURIComponent(type || 'Product')}`;
       };
 
@@ -47,7 +48,6 @@ export const fetchOrders = async (): Promise<Order[]> => {
       // Synthetic Item creation from flat fields
       const quantity = typeof data.quantity === 'number' ? data.quantity : 1;
       const shippingCost = typeof data.shippingCost === 'number' ? data.shippingCost : 0;
-      let total = typeof data.total === 'number' ? data.total : 0;
       
       // Attempt to deduce unit price if not present
       let price = data.price;
@@ -57,24 +57,48 @@ export const fetchOrders = async (): Promise<Order[]> => {
           if (typeLower.includes('family')) price = DEFAULT_PRICES[ProductType.FAMILY];
           else if (typeLower.includes('friend')) price = DEFAULT_PRICES[ProductType.FRIENDSHIP];
           else {
-             // For custom/other, try to deduce from total
-             price = quantity > 0 ? (total - shippingCost) / quantity : 0;
+             // Fallback for custom/other: try to deduce from total if available
+             const tempTotal = typeof data.total === 'number' ? data.total : 0;
+             price = quantity > 0 ? (tempTotal - shippingCost) / quantity : 0;
           }
       }
 
-      // Auto-correct Total for legacy data:
-      // If Total equals Shipping Cost (meaning product price was ignored), add the Set Price.
-      if ((total === shippingCost || total === 0) && (typeLower.includes('family') || typeLower.includes('friend'))) {
-          total = shippingCost + Number(price);
+      // Use stored items if available, otherwise construct from legacy flat fields
+      let items: OrderItem[] = [];
+      if (data.items && Array.isArray(data.items)) {
+         // Map existing items ensuring ID and Image exist
+         items = data.items.map((item: any, idx: number) => ({
+             id: item.id || `ITEM-${doc.id}-${idx}`,
+             productName: item.productName || 'Unknown Product',
+             quantity: Number(item.quantity) || 1,
+             price: Number(item.price) || 0,
+             image: item.image || getProductImage(item.productName)
+         }));
+      } else {
+         items = [{
+            id: `ITEM-${doc.id}`,
+            productName: data.type ? (data.type.charAt(0).toUpperCase() + data.type.slice(1)) : 'Assorted Items',
+            quantity: quantity,
+            price: Number(price), 
+            image: getProductImage(data.type)
+          }];
       }
 
-      const items = data.items || [{
-        id: `ITEM-${doc.id}`,
-        productName: data.type ? (data.type.charAt(0).toUpperCase() + data.type.slice(1)) : 'Assorted Items',
-        quantity: quantity,
-        price: Number(price), 
-        image: getProductImage(data.type)
-      }];
+      // CONSISTENCY CHECK: Recalculate total from items to match Detail View logic
+      // This ensures that what is shown in the list matches exactly what is calculated in the detail view.
+      const calculatedSubtotal = items.reduce((sum: number, item: OrderItem) => {
+          const name = (item.productName || '').toLowerCase();
+          // Logic: Set products have fixed price regardless of quantity (which usually describes contents)
+          if (name.includes('family') || name.includes('gia đình') || 
+              name.includes('friend') || name.includes('tình bạn') ||
+              name.includes('set') || name.includes('gif') || name.includes('quà')) {
+              return Number(item.price);
+          }
+          // Standard logic: Price * Quantity
+          return Number(item.price) * Number(item.quantity);
+      }, 0);
+
+      const finalTotal = calculatedSubtotal + Number(shippingCost);
 
       return {
         id: doc.id,
@@ -88,7 +112,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
           country: ''
         },
         items: items,
-        total: total > 0 ? total : 0,
+        total: finalTotal, // Use calculated total
         shippingCost: shippingCost,
         status: mapStatus(data.status),
         paymentStatus: (data.paymentStatus as PaymentStatus) || PaymentStatus.UNPAID,
@@ -111,9 +135,7 @@ export const addOrder = async (orderData: any): Promise<void> => {
       customerName: orderData.customer.name,
       phone: orderData.customer.phone,
       address: orderData.customer.address,
-      type: orderData.items[0].productName.toLowerCase(),
-      quantity: orderData.items[0].quantity,
-      price: orderData.items[0].price,
+      items: orderData.items, // New Array structure
       shippingCost: orderData.shippingCost,
       total: orderData.total,
       note: orderData.notes,
@@ -137,9 +159,7 @@ export const updateOrder = async (orderId: string, orderData: any): Promise<void
       customerName: orderData.customer.name,
       phone: orderData.customer.phone,
       address: orderData.customer.address,
-      type: orderData.items[0].productName.toLowerCase(),
-      quantity: orderData.items[0].quantity,
-      price: orderData.items[0].price,
+      items: orderData.items,
       shippingCost: orderData.shippingCost,
       total: orderData.total,
       note: orderData.notes,

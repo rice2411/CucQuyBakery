@@ -41,9 +41,12 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, onClose, onEdit }) => 
   };
 
   const calculateLineItemTotal = (item: OrderItem) => {
-    const name = item.productName.toLowerCase();
-    // For Family and Friendship/Friendly, price is fixed for the set. Quantity describes contents inside.
-    if (name.includes('family') || name.includes('friend')) {
+    const name = (item.productName || '').toLowerCase();
+    // For Family and Friendship/Friendly/Set, price is fixed for the set. Quantity describes contents inside.
+    // Includes support for Vietnamese names like "Combo Gia Đình", "Combo Tình Bạn"
+    if (name.includes('family') || name.includes('friend') || 
+        name.includes('gia đình') || name.includes('tình bạn') || 
+        name.includes('set') || name.includes('gif') || name.includes('quà')) {
       return item.price;
     }
     // For Custom/Other, standard multiplication

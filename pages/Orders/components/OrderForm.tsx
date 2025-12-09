@@ -97,12 +97,29 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
     }
   };
 
-  // Calculate total:
-  // For 'Custom', we use standard Quantity * Unit Price logic.
-  // For 'Family' and 'Friendship' presets, the 'unitPrice' acts as the fixed price for the entire set,
-  // regardless of the item quantity (which describes the set contents).
-  const productCost = productType === ProductType.CUSTOM ? (quantity * unitPrice) : unitPrice;
-  const total = productCost + shippingCost;
+  // Calculate total with consistent logic:
+  // For 'Set/Combo' products (Family, Friendship, or Custom names with specific keywords), 
+  // the unit price is the fixed price for the whole set. Quantity describes contents/people, not multiple sets.
+  const calculateProductCost = () => {
+      const name = productType === ProductType.CUSTOM ? customProduct : productType;
+      const n = (name || '').toLowerCase();
+      
+      // Keywords that indicate a "Set" or "Combo" where price is fixed
+      const isSet = n.includes('family') || n.includes('gia đình') || 
+                    n.includes('friend') || n.includes('tình bạn') ||
+                    n.includes('set') || n.includes('gif') || n.includes('quà');
+
+      // If it's a Preset Type (Family/Friendship) OR a Custom name detected as a set
+      if (productType !== ProductType.CUSTOM || isSet) {
+          return Number(unitPrice);
+      }
+      
+      // Otherwise standard multiplication
+      return Number(unitPrice) * Number(quantity);
+  };
+
+  const productCost = calculateProductCost();
+  const total = productCost + Number(shippingCost);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -68,14 +68,16 @@ const OrdersPage: React.FC = () => {
 
   return (
     <div className="h-full relative">
-      <div className="mb-4 flex justify-end">
-        <button 
-           onClick={handleCreateNewOrder}
-           className="flex items-center gap-2 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm shadow-orange-200 dark:shadow-none"
-         >
-           <Plus className="w-4 h-4" />
-           <span>{t('nav.newOrder')}</span>
-         </button>
+      <div className="mb-4 flex flex-col sm:flex-row justify-end items-center gap-3">
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button 
+             onClick={handleCreateNewOrder}
+             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm shadow-orange-200 dark:shadow-none"
+           >
+             <Plus className="w-4 h-4" />
+             <span>{t('nav.newOrder')}</span>
+           </button>
+        </div>
       </div>
 
       {orders.length === 0 ? (

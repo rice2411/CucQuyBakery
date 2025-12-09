@@ -86,8 +86,8 @@ const DashboardPage: React.FC = () => {
       return d >= prevStartDate && d <= prevEndDate;
     });
 
-    const currentRevenue = currentOrders.reduce((sum, o) => sum + o.total, 0);
-    const prevRevenue = prevOrders.reduce((sum, o) => sum + o.total, 0);
+    const currentRevenue = currentOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const prevRevenue = prevOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const revenueChange = prevRevenue === 0 ? (currentRevenue > 0 ? 100 : 0) : ((currentRevenue - prevRevenue) / prevRevenue) * 100;
 
     const currentAvg = currentOrders.length > 0 ? currentRevenue / currentOrders.length : 0;
@@ -190,7 +190,7 @@ const DashboardPage: React.FC = () => {
         key = date.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { month: 'short', day: 'numeric' });
       }
       if (dataMap.has(key)) {
-        dataMap.set(key, (dataMap.get(key) || 0) + order.total);
+        dataMap.set(key, (dataMap.get(key) || 0) + (Number(order.total) || 0));
       }
     });
 
