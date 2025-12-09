@@ -199,7 +199,7 @@ const DashboardPage: React.FC = () => {
 
   const handleGenerateInsight = async () => {
     setLoadingInsight(true);
-    const result = await generateDashboardInsights(orders);
+    const result = await generateDashboardInsights(orders, language);
     setInsight(result);
     setLoadingInsight(false);
   };

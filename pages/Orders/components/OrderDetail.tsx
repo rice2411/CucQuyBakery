@@ -12,7 +12,7 @@ interface OrderDetailProps {
 }
 
 const OrderDetail: React.FC<OrderDetailProps> = ({ order, onClose, onEdit }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'details' | 'ai'>('details');
   const [aiResponse, setAiResponse] = useState<string>('');
   const [loadingAi, setLoadingAi] = useState(false);
@@ -31,7 +31,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, onClose, onEdit }) => 
   const handleAiAction = async (type: 'email' | 'risk' | 'summary') => {
     setSelectedPrompt(type);
     setLoadingAi(true);
-    const response = await generateOrderAnalysis(order, type);
+    const response = await generateOrderAnalysis(order, type, language);
     setAiResponse(response);
     setLoadingAi(false);
   };
