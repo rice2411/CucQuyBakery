@@ -1,4 +1,9 @@
-import { Order, OrderStatus, PaymentStatus } from './types';
+import { Order, OrderStatus, PaymentStatus, ProductType } from './types';
+
+export const DEFAULT_PRICES = {
+  [ProductType.FAMILY]: 35000,
+  [ProductType.FRIENDSHIP]: 22000,
+};
 
 export const MOCK_ORDERS: Order[] = [
   {

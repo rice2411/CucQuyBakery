@@ -1,6 +1,7 @@
 import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { Order, OrderStatus, PaymentStatus } from '../types';
+import { Order, OrderStatus, PaymentStatus, ProductType } from '../types';
+import { DEFAULT_PRICES } from '../constants';
 
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
@@ -53,8 +54,8 @@ export const fetchOrders = async (): Promise<Order[]> => {
       
       // Fix/Default price logic for Sets
       if (!price || Number(price) === 0) {
-          if (typeLower.includes('family')) price = 35000;
-          else if (typeLower.includes('friend')) price = 22000;
+          if (typeLower.includes('family')) price = DEFAULT_PRICES[ProductType.FAMILY];
+          else if (typeLower.includes('friend')) price = DEFAULT_PRICES[ProductType.FRIENDSHIP];
           else {
              // For custom/other, try to deduce from total
              price = quantity > 0 ? (total - shippingCost) / quantity : 0;

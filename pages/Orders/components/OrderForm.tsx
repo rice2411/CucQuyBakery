@@ -5,6 +5,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import OrderFormCustomerSection from './OrderFormCustomerSection';
 import OrderFormItemsSection from './OrderFormItemsSection';
 import OrderFormStatusSection from './OrderFormStatusSection';
+import { DEFAULT_PRICES } from '../../../constants';
 
 interface OrderFormProps {
   initialData?: Order | null;
@@ -26,7 +27,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
   const [customProduct, setCustomProduct] = useState('');
   
   const [quantity, setQuantity] = useState(5);
-  const [unitPrice, setUnitPrice] = useState(35000);
+  const [unitPrice, setUnitPrice] = useState(DEFAULT_PRICES[ProductType.FAMILY]);
   
   const [shippingCost, setShippingCost] = useState(0);
   const [note, setNote] = useState('');
@@ -53,8 +54,8 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
         
         // If editing a legacy order with 0 price but known type, set defaults
         if (price === 0 && matchedPreset) {
-            if (matchedPreset === ProductType.FAMILY) price = 35000;
-            if (matchedPreset === ProductType.FRIENDSHIP) price = 22000;
+            const defaultPrice = DEFAULT_PRICES[matchedPreset as ProductType];
+            if (defaultPrice) price = defaultPrice;
         }
 
         setUnitPrice(price);
@@ -69,7 +70,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
     } else {
       setProductType(ProductType.FAMILY);
       setQuantity(5);
-      setUnitPrice(35000);
+      setUnitPrice(DEFAULT_PRICES[ProductType.FAMILY]);
       setCustomerName('');
       setPhone('');
       setAddress('');
@@ -85,10 +86,10 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
 
     if (newType === ProductType.FAMILY) {
       setQuantity(5);
-      setUnitPrice(35000);
+      setUnitPrice(DEFAULT_PRICES[ProductType.FAMILY]);
     } else if (newType === ProductType.FRIENDSHIP) {
       setQuantity(3);
-      setUnitPrice(22000);
+      setUnitPrice(DEFAULT_PRICES[ProductType.FRIENDSHIP]);
     } else if (newType === ProductType.CUSTOM) {
       setQuantity(1);
       setUnitPrice(0);
