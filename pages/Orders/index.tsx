@@ -3,7 +3,6 @@ import { Plus, Package, Download } from 'lucide-react';
 import { useOrders } from '../../contexts/OrderContext';
 import { useCustomers } from '../../contexts/CustomerContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useModal } from '../../hooks/useModal';
 import { Order } from '../../types';
 import OrderList from './components/OrderList';
 import OrderDetail from './components/OrderDetail';
@@ -15,8 +14,8 @@ const OrdersPage: React.FC = () => {
   const { orders, createNewOrder, modifyOrder, removeOrder } = useOrders();
   const { t } = useLanguage();
   
-  // Modal Hooks
-  const exportModal = useModal();
+  // Modal States
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
@@ -76,7 +75,7 @@ const OrdersPage: React.FC = () => {
       <div className="mb-4 flex flex-col sm:flex-row justify-end items-center gap-3">
         <div className="flex gap-2 w-full sm:w-auto">
           <button 
-             onClick={() => exportModal.open()}
+             onClick={() => setIsExportModalOpen(true)}
              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors"
            >
              <Download className="w-4 h-4" />
@@ -129,8 +128,8 @@ const OrdersPage: React.FC = () => {
       )}
 
       <ExportModal 
-        isOpen={exportModal.isOpen}
-        onClose={exportModal.close}
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
         orders={orders}
       />
 
