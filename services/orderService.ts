@@ -202,33 +202,53 @@ export interface ExportColumn {
   field: (order: Order) => any;
 }
 
-// Helper to apply header styling
-const applyHeaderStyle = (ws: any, headerColor: string) => {
+// Helper to apply header and cell styling including borders
+const applySheetStyles = (ws: any, headerColor: string) => {
   if (!ws['!ref']) return;
   const range = XLSX.utils.decode_range(ws['!ref']);
-  for (let C = range.s.c; C <= range.e.c; ++C) {
-    const address = XLSX.utils.encode_cell({ r: 0, c: C });
-    if (!ws[address]) continue;
-    
-    ws[address].s = {
-      font: {
-        bold: true,
-        color: { rgb: "FFFFFF" }
-      },
-      fill: {
-        fgColor: { rgb: headerColor.replace('#', '') }
-      },
-      alignment: {
-        horizontal: "center",
-        vertical: "center"
-      },
-      border: {
-        top: { style: "thin" },
-        bottom: { style: "thin" },
-        left: { style: "thin" },
-        right: { style: "thin" }
+  
+  const border = {
+    top: { style: "thin", color: { rgb: "000000" } },
+    bottom: { style: "thin", color: { rgb: "000000" } },
+    left: { style: "thin", color: { rgb: "000000" } },
+    right: { style: "thin", color: { rgb: "000000" } }
+  };
+
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const address = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!ws[address]) continue;
+      
+      if (!ws[address].s) ws[address].s = {};
+
+      if (R === 0) {
+        // Header Styles
+        ws[address].s = {
+          font: {
+            bold: true,
+            color: { rgb: "FFFFFF" }
+          },
+          fill: {
+            fgColor: { rgb: headerColor.replace('#', '') }
+          },
+          alignment: {
+            horizontal: "center",
+            vertical: "center",
+            wrapText: true
+          },
+          border: border
+        };
+      } else {
+        // Data Cell Styles
+        ws[address].s = {
+          alignment: {
+             vertical: "center",
+             wrapText: true
+          },
+          border: border
+        };
       }
-    };
+    }
   }
 };
 
@@ -272,7 +292,7 @@ export const exportOrdersToExcel = (
     wsOverall['!cols'] = [
         { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 20 }
     ];
-    applyHeaderStyle(wsOverall, headerColor);
+    applySheetStyles(wsOverall, headerColor);
     XLSX.utils.book_append_sheet(wb, wsOverall, "Overall");
 
     // 2. Individual Month Sheets
@@ -287,7 +307,7 @@ export const exportOrdersToExcel = (
 
       const ws = XLSX.utils.json_to_sheet(sheetData);
       ws['!cols'] = columns.map(() => ({ wch: 20 }));
-      applyHeaderStyle(ws, headerColor);
+      applySheetStyles(ws, headerColor);
       XLSX.utils.book_append_sheet(wb, ws, month);
     });
 
@@ -303,7 +323,7 @@ export const exportOrdersToExcel = (
 
     const ws = XLSX.utils.json_to_sheet(data);
     ws['!cols'] = columns.map(() => ({ wch: 20 }));
-    applyHeaderStyle(ws, headerColor);
+    applySheetStyles(ws, headerColor);
     XLSX.utils.book_append_sheet(wb, ws, "Orders");
   }
 
