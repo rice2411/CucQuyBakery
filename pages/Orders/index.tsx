@@ -73,25 +73,34 @@ const OrdersPage: React.FC = () => {
   
   const handleExportData = (range: 'month' | 'all' | 'custom', startDate?: string, endDate?: string) => {
     let ordersToExport = [...orders];
+    const now = new Date();
 
     if (range === 'month') {
-        const now = new Date();
+        // Explicitly construct dates for start/end of current local month
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        
         ordersToExport = ordersToExport.filter(o => {
             const d = new Date(o.date);
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            return d >= startOfMonth && d <= endOfMonth;
         });
     } else if (range === 'custom' && startDate && endDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
+        // Parse "YYYY-MM-DD" explicitly as local time to match user expectation
+        const [sYear, sMonth, sDay] = startDate.split('-').map(Number);
+        const [eYear, eMonth, eDay] = endDate.split('-').map(Number);
         
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        // Month is 0-indexed in Date constructor
+        const start = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0);
+        const end = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999);
         
         ordersToExport = ordersToExport.filter(o => {
             const d = new Date(o.date);
             return d >= start && d <= end;
         });
     }
+
+    // Sort descending by date before export
+    ordersToExport.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     exportOrdersToCSV(ordersToExport);
   };

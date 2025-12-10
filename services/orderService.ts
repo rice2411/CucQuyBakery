@@ -29,7 +29,18 @@ export const fetchOrders = async (): Promise<Order[]> => {
         if (s === 'shipping' || s === 'shipped') return OrderStatus.SHIPPED;
         if (s === 'pending') return OrderStatus.PENDING;
         if (s === 'cancelled' || s === 'fail') return OrderStatus.CANCELLED;
-        return OrderStatus.PROCESSING;
+        if (s === 'returned') return OrderStatus.RETURNED;
+        if (s === 'processing') return OrderStatus.PROCESSING;
+        
+        // Fallback checks against Enum values directly
+        const enumValues = Object.values(OrderStatus).map(v => v.toLowerCase());
+        if (enumValues.includes(s as any)) {
+            // Find the matching key/value
+            const match = Object.values(OrderStatus).find(v => v.toLowerCase() === s);
+            if (match) return match;
+        }
+
+        return OrderStatus.PROCESSING; // Default fallback
       };
 
       // Helper to generate a consistent image based on product type
@@ -84,18 +95,9 @@ export const fetchOrders = async (): Promise<Order[]> => {
           }];
       }
 
-      // CONSISTENCY CHECK: Recalculate total from items to match Detail View logic
-      // This ensures that what is shown in the list matches exactly what is calculated in the detail view.
+      // CONSISTENCY CHECK: Recalculate total using standard formula: Price * Quantity + Shipping
       const calculatedSubtotal = items.reduce((sum: number, item: OrderItem) => {
-          const name = (item.productName || '').toLowerCase();
-          // Logic: Set products have fixed price regardless of quantity (which usually describes contents)
-          if (name.includes('family') || name.includes('gia đình') || 
-              name.includes('friend') || name.includes('tình bạn') ||
-              name.includes('set') || name.includes('gif') || name.includes('quà')) {
-              return Number(item.price);
-          }
-          // Standard logic: Price * Quantity
-          return Number(item.price) * Number(item.quantity);
+          return sum + (Number(item.price) * Number(item.quantity));
       }, 0);
 
       const finalTotal = calculatedSubtotal + Number(shippingCost);
@@ -185,8 +187,6 @@ export const deleteOrder = async (orderId: string): Promise<void> => {
 };
 
 export const exportOrdersToCSV = (orders: Order[]) => {
-  if (!orders || orders.length === 0) return;
-
   // Helper to escape characters for CSV validity
   const escape = (val: any) => {
     if (val === null || val === undefined) return '';

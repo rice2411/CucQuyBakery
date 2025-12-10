@@ -13,6 +13,14 @@ interface OrderFormProps {
   onCancel: () => void;
 }
 
+export interface FormItem {
+  internalId: string;
+  productType: ProductType;
+  customProduct: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 const PRODUCT_TYPES = [ProductType.FAMILY, ProductType.FRIENDSHIP];
 
 const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) => {
@@ -23,16 +31,15 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [productType, setProductType] = useState<ProductType>(ProductType.FAMILY);
-  const [customProduct, setCustomProduct] = useState('');
   
-  const [quantity, setQuantity] = useState(5);
-  const [unitPrice, setUnitPrice] = useState(DEFAULT_PRICES[ProductType.FAMILY]);
-  
+  // New: Multiple Items State
+  const [items, setItems] = useState<FormItem[]>([]);
+
   const [shippingCost, setShippingCost] = useState(0);
   const [note, setNote] = useState('');
   const [status, setStatus] = useState<OrderStatus>(OrderStatus.PENDING);
 
+  // Initialize Data
   useEffect(() => {
     if (initialData) {
       setCustomerName(initialData.customer.name);
@@ -42,84 +49,107 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
       setStatus(initialData.status);
       setShippingCost(initialData.shippingCost || 0);
       
-      const item = initialData.items[0];
-      if (item) {
-        setQuantity(item.quantity);
-        
-        let price = item.price;
-        const currentType = item.productName;
-        // Normalize Friendly to Friendship for legacy data compatibility
-        const normalizedType = currentType.toLowerCase() === 'friendly' ? ProductType.FRIENDSHIP : currentType;
-        const matchedPreset = PRODUCT_TYPES.find(t => t.toLowerCase() === normalizedType.toLowerCase());
-        
-        // If editing a legacy order with 0 price but known type, set defaults
-        if (price === 0 && matchedPreset) {
-            const defaultPrice = DEFAULT_PRICES[matchedPreset as ProductType];
-            if (defaultPrice) price = defaultPrice;
-        }
+      if (initialData.items && initialData.items.length > 0) {
+        const loadedItems = initialData.items.map((item, index) => {
+           let type = ProductType.CUSTOM;
+           let customName = item.productName;
 
-        setUnitPrice(price);
-        
-        if (matchedPreset) {
-          setProductType(matchedPreset);
-        } else {
-          setProductType(ProductType.CUSTOM);
-          setCustomProduct(currentType);
-        }
+           // Try to match ProductType
+           const normalizedType = item.productName.toLowerCase();
+           if (normalizedType.includes('family') || normalizedType.includes('gia đình')) {
+             type = ProductType.FAMILY;
+             customName = '';
+           } else if (normalizedType.includes('friend') || normalizedType.includes('tình bạn')) {
+             type = ProductType.FRIENDSHIP;
+             customName = '';
+           }
+
+           return {
+             internalId: `existing-${index}-${Date.now()}`,
+             productType: type,
+             customProduct: customName,
+             quantity: item.quantity,
+             unitPrice: item.price
+           };
+        });
+        setItems(loadedItems);
+      } else {
+        // Fallback for empty items array (shouldn't happen)
+        setItems([{
+           internalId: `new-0`,
+           productType: ProductType.FAMILY,
+           customProduct: '',
+           quantity: 5,
+           unitPrice: DEFAULT_PRICES[ProductType.FAMILY]
+        }]);
       }
     } else {
-      setProductType(ProductType.FAMILY);
-      setQuantity(5);
-      setUnitPrice(DEFAULT_PRICES[ProductType.FAMILY]);
+      // Create New Order Defaults
       setCustomerName('');
       setPhone('');
       setAddress('');
       setNote('');
-      setCustomProduct('');
       setShippingCost(0);
+      setStatus(OrderStatus.PENDING);
+      
+      setItems([{
+         internalId: `new-${Date.now()}`,
+         productType: ProductType.FAMILY,
+         customProduct: '',
+         quantity: 5,
+         unitPrice: DEFAULT_PRICES[ProductType.FAMILY]
+      }]);
     }
   }, [initialData]);
 
-  const handleProductTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newType = e.target.value as ProductType;
-    setProductType(newType);
-
-    if (newType === ProductType.FAMILY) {
-      setQuantity(5);
-      setUnitPrice(DEFAULT_PRICES[ProductType.FAMILY]);
-    } else if (newType === ProductType.FRIENDSHIP) {
-      setQuantity(3);
-      setUnitPrice(DEFAULT_PRICES[ProductType.FRIENDSHIP]);
-    } else if (newType === ProductType.CUSTOM) {
-      setQuantity(1);
-      setUnitPrice(0);
-      setCustomProduct('');
-    }
+  const handleAddItem = () => {
+    setItems([...items, {
+      internalId: `new-${Date.now()}`,
+      productType: ProductType.FAMILY,
+      customProduct: '',
+      quantity: 5,
+      unitPrice: DEFAULT_PRICES[ProductType.FAMILY]
+    }]);
   };
 
-  // Calculate total with consistent logic:
-  // For 'Set/Combo' products (Family, Friendship, or Custom names with specific keywords), 
-  // the unit price is the fixed price for the whole set. Quantity describes contents/people, not multiple sets.
-  const calculateProductCost = () => {
-      const name = productType === ProductType.CUSTOM ? customProduct : productType;
-      const n = (name || '').toLowerCase();
-      
-      // Keywords that indicate a "Set" or "Combo" where price is fixed
-      const isSet = n.includes('family') || n.includes('gia đình') || 
-                    n.includes('friend') || n.includes('tình bạn') ||
-                    n.includes('set') || n.includes('gif') || n.includes('quà');
+  const handleRemoveItem = (internalId: string) => {
+    setItems(items.filter(i => i.internalId !== internalId));
+  };
 
-      // If it's a Preset Type (Family/Friendship) OR a Custom name detected as a set
-      if (productType !== ProductType.CUSTOM || isSet) {
-          return Number(unitPrice);
+  const handleUpdateItem = (internalId: string, field: keyof FormItem, value: any) => {
+    setItems(items.map(item => {
+      if (item.internalId === internalId) {
+        const updated = { ...item, [field]: value };
+        
+        // Auto-update price/qty defaults if product type changes
+        if (field === 'productType') {
+           if (value === ProductType.FAMILY) {
+             updated.quantity = 5;
+             updated.unitPrice = DEFAULT_PRICES[ProductType.FAMILY];
+             updated.customProduct = '';
+           } else if (value === ProductType.FRIENDSHIP) {
+             updated.quantity = 3;
+             updated.unitPrice = DEFAULT_PRICES[ProductType.FRIENDSHIP];
+             updated.customProduct = '';
+           } else if (value === ProductType.CUSTOM) {
+             updated.quantity = 1;
+             updated.unitPrice = 0;
+             updated.customProduct = '';
+           }
+        }
+        return updated;
       }
-      
-      // Otherwise standard multiplication
-      return Number(unitPrice) * Number(quantity);
+      return item;
+    }));
   };
 
-  const productCost = calculateProductCost();
-  const total = productCost + Number(shippingCost);
+  // Calculate total: Sum(Item Price * Qty) + Shipping
+  const calculateTotal = () => {
+      const itemsTotal = items.reduce((sum, item) => sum + (Number(item.unitPrice) * Number(item.quantity)), 0);
+      return itemsTotal + Number(shippingCost);
+  };
+
+  const total = calculateTotal();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,13 +157,25 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
     setIsSubmitting(true);
 
     try {
-      const finalProductName = productType === ProductType.CUSTOM ? customProduct : productType;
-      if (!finalProductName.trim()) {
-        throw new Error("Product name is required");
-      }
       if (!customerName.trim()) {
         throw new Error("Customer name is required");
       }
+      
+      if (items.length === 0) {
+        throw new Error("At least one product is required");
+      }
+
+      // Prepare items payload
+      const finalItems = items.map(item => {
+         const finalProductName = item.productType === ProductType.CUSTOM ? item.customProduct : item.productType;
+         if (!finalProductName.trim()) throw new Error("Product name is required for all items");
+         
+         return {
+           productName: finalProductName,
+           quantity: Number(item.quantity),
+           price: Number(item.unitPrice)
+         };
+      });
 
       const formData = {
         id: initialData?.id,
@@ -142,11 +184,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
           phone: phone,
           address: address,
         },
-        items: [{
-          productName: finalProductName,
-          quantity: Number(quantity),
-          price: Number(unitPrice)
-        }],
+        items: finalItems,
         shippingCost: Number(shippingCost),
         total: total,
         notes: note,
@@ -186,16 +224,19 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
               address={address} setAddress={setAddress}
             />
             <hr className="border-slate-100 dark:border-slate-700" />
+            
+            {/* Items Section Handling Multiple Products */}
             <OrderFormItemsSection 
-              productType={productType}
-              customProduct={customProduct} setCustomProduct={setCustomProduct}
-              quantity={quantity} setQuantity={setQuantity}
-              unitPrice={unitPrice} setUnitPrice={setUnitPrice}
-              shippingCost={shippingCost} setShippingCost={setShippingCost}
+              items={items}
+              onAddItem={handleAddItem}
+              onRemoveItem={handleRemoveItem}
+              onUpdateItem={handleUpdateItem}
+              shippingCost={shippingCost} 
+              setShippingCost={setShippingCost}
               total={total}
               productTypes={PRODUCT_TYPES}
-              handleProductTypeChange={handleProductTypeChange}
             />
+
             <hr className="border-slate-100 dark:border-slate-700" />
             <OrderFormStatusSection 
               status={status} setStatus={setStatus}
