@@ -58,8 +58,15 @@ export const translations = {
       tableActions: "Actions",
       delete: "Delete Order",
       confirmDelete: "Are you sure you want to delete this order? This action cannot be undone.",
-      sync: "Sync Data",
-      syncing: "Syncing..."
+      exportCsv: "Export CSV",
+      exportTitle: "Export Order Data",
+      exportCurrentMonth: "Current Month",
+      exportAllTime: "All Time",
+      exportCustom: "Custom Range",
+      exportStart: "Start Date",
+      exportEnd: "End Date",
+      exportCancel: "Cancel",
+      exportConfirm: "Export"
     },
     inventory: {
       title: "Products",
@@ -185,8 +192,15 @@ export const translations = {
       tableActions: "Thao tác",
       delete: "Xóa đơn hàng",
       confirmDelete: "Bạn có chắc chắn muốn xóa đơn hàng này không? Hành động này không thể hoàn tác.",
-      sync: "Đồng bộ",
-      syncing: "Đang xử lý..."
+      exportCsv: "Xuất CSV",
+      exportTitle: "Xuất dữ liệu đơn hàng",
+      exportCurrentMonth: "Tháng này",
+      exportAllTime: "Tất cả",
+      exportCustom: "Tùy chỉnh",
+      exportStart: "Từ ngày",
+      exportEnd: "Đến ngày",
+      exportCancel: "Hủy",
+      exportConfirm: "Xuất file"
     },
     inventory: {
       title: "Sản phẩm",

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Package, RefreshCw } from 'lucide-react';
+import { Plus, Package, Download } from 'lucide-react';
 import { useOrders } from '../../contexts/OrderContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Order } from '../../types';
@@ -7,9 +7,11 @@ import OrderList from './components/OrderList';
 import OrderDetail from './components/OrderDetail';
 import OrderForm from './components/OrderForm';
 import ConfirmModal from '../../components/ConfirmModal';
+import ExportModal from './components/ExportModal';
+import { exportOrdersToCSV } from '../../services/orderService';
 
 const OrdersPage: React.FC = () => {
-  const { orders, createNewOrder, modifyOrder, removeOrder, syncOrders } = useOrders();
+  const { orders, createNewOrder, modifyOrder, removeOrder } = useOrders();
   const { t } = useLanguage();
   
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -21,8 +23,8 @@ const OrdersPage: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Sync State
-  const [isSyncing, setIsSyncing] = useState(false);
+  // Export State
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const handleOrderSelect = (order: Order) => {
     setSelectedOrder(order);
@@ -69,15 +71,29 @@ const OrdersPage: React.FC = () => {
     setIsOrderFormOpen(false);
   };
   
-  const handleSync = async () => {
-    setIsSyncing(true);
-    try {
-        await syncOrders();
-    } catch (error) {
-        console.error("Sync failed", error);
-    } finally {
-        setIsSyncing(false);
+  const handleExportData = (range: 'month' | 'all' | 'custom', startDate?: string, endDate?: string) => {
+    let ordersToExport = [...orders];
+
+    if (range === 'month') {
+        const now = new Date();
+        ordersToExport = ordersToExport.filter(o => {
+            const d = new Date(o.date);
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+    } else if (range === 'custom' && startDate && endDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        
+        ordersToExport = ordersToExport.filter(o => {
+            const d = new Date(o.date);
+            return d >= start && d <= end;
+        });
     }
+
+    exportOrdersToCSV(ordersToExport);
   };
 
   return (
@@ -85,12 +101,11 @@ const OrdersPage: React.FC = () => {
       <div className="mb-4 flex flex-col sm:flex-row justify-end items-center gap-3">
         <div className="flex gap-2 w-full sm:w-auto">
           <button 
-             onClick={handleSync}
-             disabled={isSyncing}
-             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+             onClick={() => setIsExportModalOpen(true)}
+             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors"
            >
-             <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-             <span>{isSyncing ? t('orders.syncing') : t('orders.sync')}</span>
+             <Download className="w-4 h-4" />
+             <span>{t('orders.exportCsv')}</span>
            </button>
           <button 
              onClick={handleCreateNewOrder}
@@ -136,6 +151,12 @@ const OrdersPage: React.FC = () => {
           onCancel={() => setIsOrderFormOpen(false)} 
         />
       )}
+
+      <ExportModal 
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onExport={handleExportData}
+      />
 
       <ConfirmModal 
         isOpen={isDeleteModalOpen}

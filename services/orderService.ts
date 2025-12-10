@@ -184,66 +184,59 @@ export const deleteOrder = async (orderId: string): Promise<void> => {
   }
 };
 
-/**
- * Syncs orders:
- * 1. Converts legacy "type" fields to normalized "items" array structure.
- * 2. Checks for items with ID 'Uvgrm3eBPU1h5GGjVVHj' and forces price to 98000.
- */
-export const syncOrderData = async (): Promise<void> => {
-    try {
-        const fetchedOrders = await fetchOrders();
-        
-        // Target ID to update
-        const TARGET_ITEM_ID = 'Uvgrm3eBPU1h5GGjVVHj';
-        const TARGET_PRICE = 98000;
+export const exportOrdersToCSV = (orders: Order[]) => {
+  if (!orders || orders.length === 0) return;
 
-        const updatePromises = fetchedOrders.map(async (order) => {
-            let hasChanges = false;
-            let updatedItems = [...order.items];
+  const headers = [
+    'Order ID',
+    'Date',
+    'Customer Name',
+    'Phone',
+    'Address',
+    'Products',
+    'Subtotal',
+    'Shipping Cost',
+    'Total',
+    'Status',
+    'Payment Status',
+    'Notes'
+  ];
 
-            // Check if items contain the target ID
-            const containsTargetItem = updatedItems.some(item => item.id === TARGET_ITEM_ID);
+  const rows = orders.map(order => {
+    // Generate a simple string summary of products
+    const itemsSummary = order.items.map(i => `${i.productName} (x${i.quantity})`).join('; ');
+    
+    // Calculate subtotal for clarity
+    const subtotal = order.total - (order.shippingCost || 0);
 
-            if (containsTargetItem) {
-                updatedItems = updatedItems.map(item => {
-                    if (item.id === TARGET_ITEM_ID && item.price !== TARGET_PRICE) {
-                        hasChanges = true;
-                        return { ...item, price: TARGET_PRICE };
-                    }
-                    return item;
-                });
-                
-                // If it contains the item, we enforce the update to save the structure even if price was correct,
-                // effectively migrating "type" notes to "items" array in DB for these specific orders.
-                hasChanges = true; 
-            }
+    return [
+      order.id,
+      new Date(order.date).toLocaleDateString(),
+      `"${(order.customer.name || '').replace(/"/g, '""')}"`,
+      `"${(order.customer.phone || '').replace(/"/g, '""')}"`,
+      `"${(order.customer.address || '').replace(/"/g, '""')}"`,
+      `"${itemsSummary.replace(/"/g, '""')}"`,
+      subtotal,
+      order.shippingCost || 0,
+      order.total,
+      order.status,
+      order.paymentStatus,
+      `"${(order.notes || '').replace(/"/g, '""')}"`
+    ];
+  });
 
-            if (hasChanges) {
-                // Recalculate Total
-                const subtotal = updatedItems.reduce((sum, item) => {
-                    const name = (item.productName || '').toLowerCase();
-                     if (name.includes('family') || name.includes('gia đình') || 
-                        name.includes('friend') || name.includes('tình bạn') ||
-                        name.includes('set') || name.includes('gif') || name.includes('quà')) {
-                        return Number(item.price);
-                    }
-                    return Number(item.price) * Number(item.quantity);
-                }, 0);
-                
-                const newTotal = subtotal + (order.shippingCost || 0);
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n');
 
-                const orderRef = doc(db, 'orders', order.id);
-                // Write back the standardized items array and corrected total
-                await updateDoc(orderRef, {
-                    items: updatedItems,
-                    total: newTotal
-                });
-            }
-        });
-
-        await Promise.all(updatePromises);
-    } catch (error) {
-        console.error("Error syncing orders:", error);
-        throw error;
-    }
+  // Add BOM for UTF-8 compatibility (especially for Excel reading Vietnamese)
+  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
