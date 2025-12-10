@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, Eye, Calendar, User, ArrowRight, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Eye, Calendar, User, ArrowRight, ChevronLeft, ChevronRight, Trash2, Filter, Package } from 'lucide-react';
 import { Order, OrderStatus } from '../../../types';
 import { STATUS_COLORS } from '../../../constants';
 import { useLanguage } from '../../../contexts/LanguageContext';
@@ -11,37 +11,95 @@ interface OrderListProps {
 }
 
 const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOrder }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
+  
+  // New Filters
+  const [productFilter, setProductFilter] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(''); // Format: YYYY-MM
+  
+  // Mobile Filter Toggle State
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
   const [sortField, setSortField] = useState<keyof Order>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Generate Month Options from Jan 2025 to Now
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const start = new Date(2025, 0, 1); // Jan 2025
+    const now = new Date();
+    
+    // Safety check in case system time is wrong and before 2025
+    if (now < start) {
+       return [{ 
+         value: '2025-01', 
+         label: start.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { month: 'long', year: 'numeric' }) 
+       }];
+    }
+
+    const current = new Date(start);
+    while (current <= now || (current.getMonth() === now.getMonth() && current.getFullYear() === now.getFullYear())) {
+       const label = current.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { month: 'long', year: 'numeric' });
+       // Format YYYY-MM
+       const value = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+       options.push({ value, label });
+       
+       // Increment month
+       current.setMonth(current.getMonth() + 1);
+       
+       // Break if we somehow go way past now to prevent infinite loops
+       if (current.getFullYear() > now.getFullYear() + 1) break;
+    }
+    return options.reverse(); // Newest first
+  }, [language]);
+
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      // Basic Search (ID or Customer Name)
       const matchesSearch = 
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.customer.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Status Filter
       const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      
+      // Product Filter
+      const matchesProduct = !productFilter || order.items.some(item => 
+        item.productName.toLowerCase().includes(productFilter.toLowerCase())
+      );
+
+      // Month Filter
+      let matchesDate = true;
+      if (selectedMonth) {
+        const [filterYear, filterMonth] = selectedMonth.split('-').map(Number);
+        const orderDate = new Date(order.date);
+        if (orderDate.getFullYear() !== filterYear || (orderDate.getMonth() + 1) !== filterMonth) {
+          matchesDate = false;
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesProduct && matchesDate;
     }).sort((a, b) => {
+      // Sorting logic
       if (a[sortField]! < b[sortField]!) return sortDirection === 'asc' ? -1 : 1;
       if (a[sortField]! > b[sortField]!) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [orders, searchTerm, statusFilter, sortField, sortDirection]);
+  }, [orders, searchTerm, statusFilter, sortField, sortDirection, productFilter, selectedMonth]);
 
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, productFilter, selectedMonth]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   
-  // Adjust currentPage if it exceeds totalPages due to deletion
+  // Adjust currentPage if it exceeds totalPages due to deletion or filtering
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
@@ -78,37 +136,98 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
+  const renderProductSummary = (order: Order) => {
+    if (!order.items || order.items.length === 0) return 'No items';
+    const firstItem = order.items[0];
+    const remainingCount = order.items.length - 1;
+    return (
+      <div className="flex flex-col">
+        <span className="font-medium text-slate-700 dark:text-slate-300">{firstItem.productName}</span>
+        {remainingCount > 0 && (
+          <span className="text-xs text-slate-500 italic">+{remainingCount} more</span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-full animate-fade-in transition-colors">
-      <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-white">{t('orders.recent')}</h2>
-        
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input 
-              type="text" 
-              placeholder={t('orders.searchPlaceholder')}
-              className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 w-full sm:w-64 placeholder-slate-400"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      
+      {/* Filters Toolbar */}
+      <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center justify-between w-full sm:w-auto">
+             <h2 className="text-lg font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+               <Filter className="w-5 h-5 text-orange-500" />
+               {t('orders.recent')}
+             </h2>
+             <button 
+               onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+               className="sm:hidden p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+               aria-label="Toggle filters"
+             >
+               {isFiltersOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+             </button>
           </div>
           
-          <select 
-            className="w-full sm:w-auto px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="All">{t('orders.allStatus')}</option>
-            {Object.values(OrderStatus).map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+          <div className="relative w-full sm:w-auto">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+             <input 
+               type="text" 
+               placeholder={t('orders.searchPlaceholder')}
+               className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 w-full sm:w-64 placeholder-slate-400 transition-all"
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+             />
+          </div>
+        </div>
+
+        {/* Collapsible Grid: Hidden on mobile unless open, always Grid on desktop */}
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 ${isFiltersOpen ? 'grid' : 'hidden sm:grid'}`}>
+           {/* Product Filter */}
+           <div className="relative">
+              <Package className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <input 
+                type="text" 
+                placeholder={t('orders.filterProductPlaceholder')}
+                className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 w-full placeholder-slate-400 transition-all"
+                value={productFilter}
+                onChange={(e) => setProductFilter(e.target.value)}
+              />
+           </div>
+
+           {/* Month Filter Dropdown */}
+           <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <select 
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 appearance-none cursor-pointer"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              >
+                <option value="">{t('orders.allMonths')}</option>
+                {monthOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
+           </div>
+
+           {/* Status */}
+           <select 
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer transition-all"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="All">{t('orders.allStatus')}</option>
+              {Object.values(OrderStatus).map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
         </div>
       </div>
 
-      <div className="lg:hidden p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/50">
+      {/* Mobile Card View */}
+      <div className="lg:hidden p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/50 flex-1 overflow-y-auto">
         {currentOrders.length > 0 ? (
           currentOrders.map(order => (
              <div 
@@ -118,7 +237,10 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
              >
                 <div className="flex justify-between items-start mb-3">
                    <div>
-                      <span className="text-orange-600 dark:text-orange-400 font-bold text-sm">{order.id}</span>
+                      {/* ID truncated to first 3 chars + .. */}
+                      <span className="text-orange-600 dark:text-orange-400 font-bold text-sm" title={order.id}>
+                        {order.id.substring(0, 3)}..
+                      </span>
                       <div className="flex items-center text-slate-400 dark:text-slate-500 text-xs mt-1">
                          <Calendar className="w-3 h-3 mr-1" />
                          {new Date(order.date).toLocaleDateString()}
@@ -129,15 +251,26 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
                     </span>
                 </div>
                 
-                <div className="flex items-center gap-3 mb-4 p-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                   <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-400 shadow-sm">
-                      <User className="w-4 h-4" />
+                <div className="flex flex-col gap-2 mb-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                   {/* Customer Info */}
+                   <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+                        <User className="w-4 h-4" />
+                     </div>
+                     <p className="text-sm font-medium text-slate-900 dark:text-white">{order.customer.name}</p>
                    </div>
-                   <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">{order.customer.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</p>
+                   
+                   {/* Product Info */}
+                   <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+                        <Package className="w-4 h-4" />
+                     </div>
+                     <div className="text-sm text-slate-700 dark:text-slate-300">
+                        {renderProductSummary(order)}
+                     </div>
                    </div>
-                   <div className="text-right">
+
+                   <div className="mt-1 pt-2 border-t border-slate-100 dark:border-slate-600 flex justify-between items-center">
                        <p className="text-xs text-slate-500 dark:text-slate-400">{t('orders.tableTotal')}</p>
                        <p className="font-bold text-slate-900 dark:text-white">{formatVND(order.total)}</p>
                    </div>
@@ -166,17 +299,21 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
         )}
       </div>
 
+      {/* Desktop Table View */}
       <div className="hidden lg:block overflow-x-auto min-h-[500px]">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50/50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-100 dark:border-slate-700">
-              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 group" onClick={() => handleSort('id')}>
+              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 group w-24" onClick={() => handleSort('id')}>
                 <div className="flex items-center">{t('orders.tableId')} <SortIcon field="id" /></div>
               </th>
+              {/* Customer moved to 2nd column */}
+              <th className="px-6 py-4">{t('orders.tableCustomer')}</th>
+              {/* Product Type column added */}
+              <th className="px-6 py-4">{t('orders.tableProduct')}</th>
               <th className="px-6 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 group" onClick={() => handleSort('date')}>
                 <div className="flex items-center">{t('orders.tableDate')} <SortIcon field="date" /></div>
               </th>
-              <th className="px-6 py-4">{t('orders.tableCustomer')}</th>
               <th className="px-6 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 group" onClick={() => handleSort('status')}>
                  <div className="flex items-center">{t('orders.tableStatus')} <SortIcon field="status" /></div>
               </th>
@@ -191,16 +328,24 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
               currentOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors group">
                   <td className="px-6 py-4">
-                    <span className="font-medium text-orange-600 dark:text-orange-400">{order.id}</span>
+                    {/* Truncated ID */}
+                    <span className="font-medium text-orange-600 dark:text-orange-400" title={order.id}>
+                       {order.id.substring(0, 3)}..
+                    </span>
                   </td>
-                  <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm">
-                    {new Date(order.date).toLocaleDateString()}
-                  </td>
+                  {/* Customer Info */}
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <span className="text-slate-900 dark:text-white font-medium text-sm">{order.customer.name}</span>
-                      <span className="text-slate-400 dark:text-slate-500 text-xs">{order.customer.email}</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-xs">{order.customer.email || order.customer.phone}</span>
                     </div>
+                  </td>
+                  {/* Product Info */}
+                  <td className="px-6 py-4 text-sm">
+                    {renderProductSummary(order)}
+                  </td>
+                  <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm">
+                    {new Date(order.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium border border-transparent ${STATUS_COLORS[order.status]}`}>
@@ -238,7 +383,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
+                <td colSpan={7} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500">
                   {t('orders.noOrdersCriteria')}
                 </td>
               </tr>

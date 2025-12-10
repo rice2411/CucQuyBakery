@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Order } from '../types';
-import { fetchOrders, addOrder, updateOrder, deleteOrder } from '../services/orderService';
+import { fetchOrders, addOrder, updateOrder, deleteOrder, syncOrderData } from '../services/orderService';
 
 interface OrderContextType {
   orders: Order[];
@@ -9,6 +9,7 @@ interface OrderContextType {
   createNewOrder: (data: any) => Promise<void>;
   modifyOrder: (id: string, data: any) => Promise<void>;
   removeOrder: (id: string) => Promise<void>;
+  syncOrders: () => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -48,8 +49,13 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     await refreshOrders();
   };
 
+  const syncOrders = async () => {
+    await syncOrderData();
+    await refreshOrders();
+  };
+
   return (
-    <OrderContext.Provider value={{ orders, loading, refreshOrders, createNewOrder, modifyOrder, removeOrder }}>
+    <OrderContext.Provider value={{ orders, loading, refreshOrders, createNewOrder, modifyOrder, removeOrder, syncOrders }}>
       {children}
     </OrderContext.Provider>
   );

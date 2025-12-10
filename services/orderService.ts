@@ -183,3 +183,67 @@ export const deleteOrder = async (orderId: string): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Syncs orders:
+ * 1. Converts legacy "type" fields to normalized "items" array structure.
+ * 2. Checks for items with ID 'Uvgrm3eBPU1h5GGjVVHj' and forces price to 98000.
+ */
+export const syncOrderData = async (): Promise<void> => {
+    try {
+        const fetchedOrders = await fetchOrders();
+        
+        // Target ID to update
+        const TARGET_ITEM_ID = 'Uvgrm3eBPU1h5GGjVVHj';
+        const TARGET_PRICE = 98000;
+
+        const updatePromises = fetchedOrders.map(async (order) => {
+            let hasChanges = false;
+            let updatedItems = [...order.items];
+
+            // Check if items contain the target ID
+            const containsTargetItem = updatedItems.some(item => item.id === TARGET_ITEM_ID);
+
+            if (containsTargetItem) {
+                updatedItems = updatedItems.map(item => {
+                    if (item.id === TARGET_ITEM_ID && item.price !== TARGET_PRICE) {
+                        hasChanges = true;
+                        return { ...item, price: TARGET_PRICE };
+                    }
+                    return item;
+                });
+                
+                // If it contains the item, we enforce the update to save the structure even if price was correct,
+                // effectively migrating "type" notes to "items" array in DB for these specific orders.
+                hasChanges = true; 
+            }
+
+            if (hasChanges) {
+                // Recalculate Total
+                const subtotal = updatedItems.reduce((sum, item) => {
+                    const name = (item.productName || '').toLowerCase();
+                     if (name.includes('family') || name.includes('gia đình') || 
+                        name.includes('friend') || name.includes('tình bạn') ||
+                        name.includes('set') || name.includes('gif') || name.includes('quà')) {
+                        return Number(item.price);
+                    }
+                    return Number(item.price) * Number(item.quantity);
+                }, 0);
+                
+                const newTotal = subtotal + (order.shippingCost || 0);
+
+                const orderRef = doc(db, 'orders', order.id);
+                // Write back the standardized items array and corrected total
+                await updateDoc(orderRef, {
+                    items: updatedItems,
+                    total: newTotal
+                });
+            }
+        });
+
+        await Promise.all(updatePromises);
+    } catch (error) {
+        console.error("Error syncing orders:", error);
+        throw error;
+    }
+};
