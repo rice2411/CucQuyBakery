@@ -32,23 +32,6 @@
       ]
     },
     {
-      "source": "/workbox-*.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        },
-        {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
-        }
-      ]
-    },
-    {
       "source": "/registerSW.js",
       "headers": [
         {
