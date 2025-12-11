@@ -131,6 +131,8 @@ export default defineConfig(({ mode }) => {
             ]
           },
           workbox: {
+            // Tăng giới hạn file size để precache (mặc định 2 MB)
+            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
             // Precache offline.html
             additionalManifestEntries: [
               { url: '/offline.html', revision: null }
