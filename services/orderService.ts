@@ -2,6 +2,7 @@ import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, doc,
 import { db } from '../config/firebase';
 import { Order, OrderStatus, PaymentStatus, PaymentMethod, ProductType, OrderItem, Customer } from '../types/index';
 import { DEFAULT_PRICES } from '../constants/index';
+import { sendMessageToGroup } from './zaloService';
 
 export const fetchOrders = async (): Promise<Order[]> => {
   try {
@@ -225,7 +226,8 @@ export const addOrder = async (orderData: any): Promise<void> => {
       paymentStatus: orderData.paymentStatus || 'Unpaid',
       paymentMethod: orderData.paymentMethod || 'Cash'
     };
-    await addDoc(ordersRef, payload);
+    //  await addDoc(ordersRef, payload);
+    await sendMessageToGroup(payload as any);
   } catch (error) {
     console.error("Error adding order:", error);
     throw error;

@@ -67,7 +67,9 @@ export default defineConfig(({ mode }) => {
       "process.env.FIREBASE_MEASUREMENT_ID": JSON.stringify(
         env.FIREBASE_MEASUREMENT_ID
       ),
-      "process.env.FIREBASE_VAPID_KEY": JSON.stringify(env.FIREBASE_VAPID_KEY),
+      "process.env.ZALO_SHOP_CODE": JSON.stringify(env.ZALO_SHOP_CODE),
+      "process.env.ZALO_TOKEN": JSON.stringify(env.ZALO_TOKEN),
+      "process.env.ZALO_URL": JSON.stringify(env.ZALO_URL),
     },
     resolve: {
       alias: {
