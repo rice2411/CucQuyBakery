@@ -1,7 +1,5 @@
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore } from 'firebase/firestore';
-import { getMessaging } from 'firebase/messaging';
-import { onMessage } from "firebase/messaging";
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY || '',
   authDomain: process.env.FIREBASE_AUTH_DOMAIN || '',
@@ -14,11 +12,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const messaging = getMessaging(app);
-
-onMessage(messaging, (payload) => {
-  console.log('Message received: ', payload);
-});
 // Use experimentalForceLongPolling to prevent connection timeouts in restricted environments
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true
