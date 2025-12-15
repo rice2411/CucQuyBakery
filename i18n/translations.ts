@@ -158,12 +158,18 @@ export const translations = {
         active: "Active",
         inactive: "Inactive"
       },
+      role: {
+        superAdmin: "Super Admin",
+        admin: "Admin",
+        colaborator: "Colaborator"
+      },
       filter: {
         all: "All Status"
       },
       table: {
         user: "User",
         customName: "Custom Name",
+        role: "Role",
         status: "Status",
         lastLogin: "Last Login",
         actions: "Actions"
@@ -179,9 +185,11 @@ export const translations = {
       messages: {
         statusUpdated: "User status updated successfully",
         customNameUpdated: "Custom name updated successfully",
+        roleUpdated: "User role updated successfully",
         loadError: "Failed to load users",
         updateStatusError: "Failed to update status",
-        updateCustomNameError: "Failed to update custom name"
+        updateCustomNameError: "Failed to update custom name",
+        updateRoleError: "Failed to update role"
       }
     },
     transactions: {
@@ -305,6 +313,7 @@ export const translations = {
       storageTitle: "Kho nguyên liệu",
       customersTitle: "Quản lý khách hàng",
       transactionsTitle: "Lịch sử giao dịch",
+      usersTitle: "Quản lý người dùng",
       systemOp: "Hệ thống ổn định"
     },
     dashboard: {
@@ -442,12 +451,18 @@ export const translations = {
         active: "Đã kích hoạt",
         inactive: "Đã vô hiệu hóa"
       },
+      role: {
+        superAdmin: "Super Admin",
+        admin: "Admin",
+        colaborator: "Cộng tác viên"
+      },
       filter: {
         all: "Tất cả trạng thái"
       },
       table: {
         user: "Người dùng",
         customName: "Tên gợi nhớ",
+        role: "Vai trò",
         status: "Trạng thái",
         lastLogin: "Đăng nhập cuối",
         actions: "Thao tác"
@@ -463,9 +478,11 @@ export const translations = {
       messages: {
         statusUpdated: "Cập nhật trạng thái thành công",
         customNameUpdated: "Cập nhật tên gợi nhớ thành công",
+        roleUpdated: "Cập nhật vai trò thành công",
         loadError: "Không thể tải danh sách người dùng",
         updateStatusError: "Không thể cập nhật trạng thái",
-        updateCustomNameError: "Không thể cập nhật tên gợi nhớ"
+        updateCustomNameError: "Không thể cập nhật tên gợi nhớ",
+        updateRoleError: "Không thể cập nhật vai trò"
       }
     },
     transactions: {

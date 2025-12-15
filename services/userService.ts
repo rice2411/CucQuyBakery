@@ -150,3 +150,18 @@ export const updateUserCustomName = async (uid: string, customName: string): Pro
     throw error;
   }
 };
+
+/**
+ * Cập nhật role của user
+ * @param uid - UID của user
+ * @param role - Role mới
+ */
+export const updateUserRole = async (uid: string, role: UserRole): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    await setDoc(userRef, { role }, { merge: true });
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    throw error;
+  }
+};
