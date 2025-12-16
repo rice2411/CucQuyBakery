@@ -23,7 +23,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
 
       let items: OrderItem[] = [];
       if (data.items && Array.isArray(data.items)) {
-        data.items.map((item: any, idx: number) => {
+        items = data.items.map((item: any, idx: number) => {
            const itemName = item.name || item.productName || 'Unknown Product';
            return {
              id: item.id,

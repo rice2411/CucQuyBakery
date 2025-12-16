@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, Tag, DollarSign, AlignLeft, AlertCircle, Scale, Building, Bell } from 'lucide-react';
+import { X, Save, AlertCircle, Scale, Search, Check } from 'lucide-react';
 import { Ingredient } from '../../../types';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { checkIngredientExists, fetchIngredients } from '../../../services/ingredientService';
 
 interface IngredientFormProps {
   initialData?: Ingredient | null;
@@ -16,24 +17,123 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ initialData, onSave, on
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState('');
+  const [supplier, setSupplier] = useState('');
+  const [amount, setAmount] = useState(0);
   const [quantity, setQuantity] = useState(0);
   const [unit, setUnit] = useState('kg');
-  const [minQuantity, setMinQuantity] = useState(0);
-  const [price, setPrice] = useState(0);
-  const [supplier, setSupplier] = useState('');
-  const [note, setNote] = useState(''); 
+  const [note, setNote] = useState('');
+
+  // Dropdown states
+  const [showNameDropdown, setShowNameDropdown] = useState(false);
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+  const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
+  const [loadingIngredients, setLoadingIngredients] = useState(false);
+
+  const nameRef = useRef<HTMLDivElement>(null);
+  const supplierRef = useRef<HTMLDivElement>(null);
+
+  // Load all ingredients for dropdown
+  useEffect(() => {
+    if (!initialData) {
+      // Only load when creating new ingredient
+      const loadIngredients = async () => {
+        setLoadingIngredients(true);
+        try {
+          const data = await fetchIngredients();
+          // Convert IngredientWithStats to Ingredient for dropdown
+          const ingredients: Ingredient[] = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            supplier: item.supplier,
+            amount: item.amount || 0,
+            quantity: item.quantity || 0,
+            unit: item.unit,
+            note: item.note,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt
+          }));
+          setAllIngredients(ingredients);
+        } catch (error) {
+          console.error('Error loading ingredients:', error);
+        } finally {
+          setLoadingIngredients(false);
+        }
+      };
+      loadIngredients();
+    }
+  }, [initialData]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (nameRef.current && !nameRef.current.contains(event.target as Node)) {
+        setShowNameDropdown(false);
+      }
+      if (supplierRef.current && !supplierRef.current.contains(event.target as Node)) {
+        setShowSupplierDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
-      setQuantity(initialData.quantity);
+      setSupplier(initialData.supplier);
+      setAmount(initialData.amount || 0);
+      setQuantity(initialData.quantity || 0);
       setUnit(initialData.unit);
-      setMinQuantity(initialData.minQuantity);
-      setPrice(initialData.price);
-      setSupplier(initialData.supplier || '');
       setNote(initialData.note || '');
+    } else {
+      // Reset form for new ingredient
+      setName('');
+      setSupplier('');
+      setAmount(0);
+      setQuantity(0);
+      setUnit('kg');
+      setNote('');
     }
   }, [initialData]);
+
+  // Filter ingredients for name dropdown
+  const nameResults = allIngredients.filter(ing => {
+    if (!name.trim()) return false;
+    const term = name.toLowerCase();
+    return ing.name.toLowerCase().includes(term);
+  }).slice(0, 5);
+
+  // Filter ingredients for supplier dropdown
+  const supplierResults = allIngredients.filter(ing => {
+    if (!supplier.trim()) return false;
+    const term = supplier.toLowerCase();
+    return ing.supplier.toLowerCase().includes(term);
+  }).slice(0, 5);
+
+  // Handle selecting by name only (partial match)
+  const handleSelectByName = (ingredient: Ingredient) => {
+    setName(ingredient.name);
+    setSupplier(ingredient.supplier);
+    setAmount(ingredient.amount || 0);
+    setQuantity(ingredient.quantity || 0);
+    setUnit(ingredient.unit);
+    setNote(ingredient.note || '');
+    setShowNameDropdown(false);
+  };
+
+  // Handle selecting by supplier only (partial match)
+  const handleSelectBySupplier = (ingredient: Ingredient) => {
+    setName(ingredient.name);
+    setSupplier(ingredient.supplier);
+    setAmount(ingredient.amount || 0);
+    setQuantity(ingredient.quantity || 0);
+    setUnit(ingredient.unit);
+    setNote(ingredient.note || '');
+    setShowSupplierDropdown(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,24 +141,30 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ initialData, onSave, on
     setIsSubmitting(true);
 
     try {
-      if (!name.trim()) throw new Error("Name is required");
-      if (quantity < 0) throw new Error("Quantity cannot be negative");
-      if (price < 0) throw new Error("Price cannot be negative");
+      if (!name.trim()) throw new Error(t('storage.errors.nameRequired'));
+      if (!supplier.trim()) throw new Error(t('storage.errors.supplierRequired'));
+
+      // Check for duplicate when creating new ingredient
+      if (!initialData) {
+        const exists = await checkIngredientExists(name.trim(), supplier.trim());
+        if (exists) {
+          throw new Error(t('storage.errors.duplicateIngredient'));
+        }
+      }
 
       const formData = {
         id: initialData?.id,
-        name,
+        name: name.trim(),
+        supplier: supplier.trim(),
+        amount,
         quantity,
         unit,
-        minQuantity,
-        price,
-        supplier,
-        note,
+        note: note.trim(),
       };
 
       await onSave(formData);
     } catch (err: any) {
-      setError(err.message || "Failed to save ingredient");
+      setError(err.message || t('storage.errors.saveIngredient'));
       setIsSubmitting(false);
     }
   };
@@ -89,112 +195,187 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ initialData, onSave, on
             )}
 
             <div className="space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('storage.name')} *</label>
+              {/* Name - Required with Dropdown */}
+              <div className="relative" ref={nameRef}>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {t('storage.name')} *
+                </label>
                 <div className="relative">
-                  <Tag className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                   <input 
                     type="text" 
                     required
                     value={name}
-                    onChange={e => setName(e.target.value)}
+                    onChange={e => {
+                      setName(e.target.value);
+                      setShowNameDropdown(true);
+                    }}
+                    onFocus={() => !initialData && setShowNameDropdown(true)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
-                    placeholder="e.g. Flour, Sugar, Milk"
+                    placeholder={t('storage.namePlaceholder')}
+                    autoComplete="off"
+                    disabled={!!initialData}
                   />
                 </div>
+
+                {/* Name Dropdown Results */}
+                {!initialData && showNameDropdown && nameResults.length > 0 && (
+                  <div className="absolute z-20 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <ul className="py-1">
+                      {nameResults.map((ingredient) => (
+                        <li 
+                          key={ingredient.id}
+                          onClick={() => handleSelectByName(ingredient)}
+                          className="px-4 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer transition-colors group"
+                        >
+                          <div className="flex justify-between items-center">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400">
+                                {ingredient.name}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {ingredient.supplier} {ingredient.unit && `• ${t(`units.${ingredient.unit}`)}`}
+                              </p>
+                            </div>
+                            {ingredient.name.toLowerCase() === name.toLowerCase() && (
+                              <Check className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
-              {/* Quantity & Unit */}
+              {/* Supplier - Required with Dropdown */}
+              <div className="relative" ref={supplierRef}>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {t('storage.supplier')} *
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    required
+                    value={supplier}
+                    onChange={e => {
+                      setSupplier(e.target.value);
+                      setShowSupplierDropdown(true);
+                    }}
+                    onFocus={() => !initialData && setShowSupplierDropdown(true)}
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                    placeholder={t('storage.supplierPlaceholder')}
+                    autoComplete="off"
+                    disabled={!!initialData}
+                  />
+                </div>
+
+                {/* Supplier Dropdown Results */}
+                {!initialData && showSupplierDropdown && supplierResults.length > 0 && (
+                  <div className="absolute z-20 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <ul className="py-1">
+                      {supplierResults.map((ingredient) => (
+                        <li 
+                          key={ingredient.id}
+                          onClick={() => handleSelectBySupplier(ingredient)}
+                          className="px-4 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer transition-colors group"
+                        >
+                          <div className="flex justify-between items-center">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400">
+                                {ingredient.supplier}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {ingredient.name} {ingredient.unit && `• ${t(`units.${ingredient.unit}`)}`}
+                              </p>
+                            </div>
+                            {ingredient.supplier.toLowerCase() === supplier.toLowerCase() && (
+                              <Check className="w-4 h-4 text-orange-500 flex-shrink-0" />
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Amount & Unit */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('storage.quantity')}</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {t('storage.weight')}
+                  </label>
                   <div className="relative">
                     <Scale className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                     <input 
                       type="number" 
                       min="0"
                       step="0.01"
-                      value={quantity}
-                      onChange={e => setQuantity(Number(e.target.value))}
+                      value={amount}
+                      onChange={e => setAmount(Number(e.target.value))}
                       className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                      placeholder="0"
                     />
                   </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {t('storage.exampleWeight')}
+                  </p>
                 </div>
                 <div>
-                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('storage.unit')}</label>
-                   <select 
-                    value={unit} 
-                    onChange={e => setUnit(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
-                  >
-                    {units.map(u => (
-                      <option key={u} value={u}>{t(`units.${u}`)}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Price & Min Quantity */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('storage.price')}</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    {t('storage.unit')}
+                  </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                    <input 
-                      type="number" 
-                      min="0"
-                      step="1000"
-                      value={price}
-                      onChange={e => setPrice(Number(e.target.value))}
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('storage.minQuantity')}</label>
-                  <div className="relative">
-                    <Bell className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                    <input 
-                      type="number" 
-                      min="0"
-                      step="0.01"
-                      value={minQuantity}
-                      onChange={e => setMinQuantity(Number(e.target.value))}
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
-                    />
+                    <Scale className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                    <select 
+                      value={unit} 
+                      onChange={e => setUnit(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none appearance-none"
+                    >
+                      {units.map(u => (
+                        <option key={u} value={u}>{t(`units.${u}`)}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
 
-              {/* Supplier */}
+              {/* Quantity */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('storage.supplier')}</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {t('storage.unitQuantity')}
+                </label>
                 <div className="relative">
-                  <Building className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <Scale className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                   <input 
-                    type="text" 
-                    value={supplier}
-                    onChange={e => setSupplier(e.target.value)}
+                    type="number" 
+                    min="0"
+                    step="1"
+                    value={quantity}
+                    onChange={e => setQuantity(Number(e.target.value))}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
-                    placeholder="Supplier Name"
+                    placeholder="0"
                   />
                 </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {t('storage.exampleUnitQuantity')}
+                </p>
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('storage.note')}</label>
-                <div className="relative">
-                   <AlignLeft className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                   <textarea 
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    rows={3}
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none resize-none"
-                    placeholder="Additional notes..."
-                  />
-                </div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {t('storage.note')}
+                </label>
+                <textarea 
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+                  placeholder={t('storage.notePlaceholder')}
+                />
               </div>
             </div>
 
