@@ -4,7 +4,7 @@ import { Order, OrderItem, PaymentMethod, OrderStatus, PaymentStatus } from '@/t
 import { STATUS_COLORS } from '@/constant/order'; 
 import { generateOrderAnalysis } from '@/services/geminiService';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { formatVND } from '@/utils/currencyUtil';
 interface OrderDetailProps {
   order: Order | null;
   onClose: () => void;
@@ -46,9 +46,6 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, onClose, onEdit, onUpd
     setLoadingAi(false);
   };
 
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
 
   const calculateLineItemTotal = (item: OrderItem) => {
     return item.price * item.quantity;

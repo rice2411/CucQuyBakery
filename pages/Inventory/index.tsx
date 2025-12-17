@@ -5,6 +5,7 @@ import { Product } from '@/types';
 import { fetchProducts, addProduct, updateProduct, deleteProduct } from '@/services/productService';
 import ProductForm from '@/pages/Inventory/components/ProductForm';
 import ConfirmModal from '@/components/ConfirmModal';
+import { formatVND } from '@/utils/currencyUtil';
 
 const InventoryPage: React.FC = () => {
   const { t } = useLanguage();
@@ -82,9 +83,6 @@ const InventoryPage: React.FC = () => {
     );
   }, [products, searchTerm]);
 
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
 
   return (
     <div className="h-full relative flex flex-col space-y-6">

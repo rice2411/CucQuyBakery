@@ -16,6 +16,7 @@ import InventoryForm from './components/InventoryForm';
 import HistoryModal from './components/HistoryModal';
 import LowStockModal from './components/LowStockModal';
 import ConfirmModal from '@/components/ConfirmModal';  
+import { formatVND } from '@/utils/currencyUtil';
 
 const StoragePage: React.FC = () => {
   const { t } = useLanguage();
@@ -147,9 +148,6 @@ const StoragePage: React.FC = () => {
     return { totalItems, totalValue, lowStockCount };
   }, [ingredients]);
 
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';

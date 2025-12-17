@@ -3,6 +3,7 @@ import { Search, Loader2, ArrowRightLeft, Calendar } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fetchTransactions } from '@/services/transactionService';
 import { Transaction } from '@/types';
+import { formatVND } from '@/utils/currencyUtil';
 
 const TransactionsPage: React.FC = () => {
   const { t } = useLanguage();
@@ -19,10 +20,6 @@ const TransactionsPage: React.FC = () => {
     };
     loadData();
   }, []);
-
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
 
   const formatDate = (dateStr: string) => {
       try {

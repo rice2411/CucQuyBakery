@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Package, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { formatVND } from '@/utils/currencyUtil';
 interface DashboardMetricsProps {
   metrics: {
     revenue: number;
@@ -30,9 +30,6 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
 
   // Helper to generate trend text and bottom note
   const getTrendInfo = (change: number) => {

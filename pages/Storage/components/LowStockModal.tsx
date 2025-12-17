@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, AlertTriangle, Package } from 'lucide-react';
 import { IngredientWithStats } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatVND } from '@/utils/currencyUtil';
 
 interface LowStockModalProps {
   items: IngredientWithStats[];
@@ -12,9 +13,6 @@ interface LowStockModalProps {
 const LowStockModal: React.FC<LowStockModalProps> = ({ items, onClose }) => {
   const { t } = useLanguage();
 
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
 
   return createPortal(
     <div className="fixed inset-0 z-[100] overflow-hidden" role="dialog" aria-modal="true">

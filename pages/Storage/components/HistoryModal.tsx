@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Import, ClipboardCheck, Calendar, DollarSign, Scale } from 'lucide-react';
 import { IngredientWithStats } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { formatVND } from '@/utils/currencyUtil';
 interface HistoryModalProps {
   ingredient: IngredientWithStats;
   onClose: () => void;
@@ -67,10 +67,6 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ ingredient, onClose }) => {
     } catch (e) {
       return dateString;
     }
-  };
-
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
   const displayRecords = useMemo(() => {

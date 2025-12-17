@@ -4,7 +4,7 @@ import { Menu, LogOut } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAccessibleRoutes } from '@/config/routes';
-import { getUserFromLocalStorage } from '@/utils/userStorage';
+import { getUserFromLocalStorage } from '@/utils/userUtil';
 import ThemeToggle from './ThemeToggle';
 import toast from 'react-hot-toast';
 
