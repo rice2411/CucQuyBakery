@@ -9,6 +9,7 @@ export const translations = {
       orders: "Orders",
       inventory: "Inventory",
       customers: "Customers",
+      suppliers: "Suppliers",
       users: "User Management",
       transactions: "Transactions",
       settings: "Settings",
@@ -21,6 +22,7 @@ export const translations = {
       ordersTitle: "Order Management",
       inventoryTitle: "Product Inventory",
       customersTitle: "Customer Management",
+      suppliersTitle: "Supplier Management",
       usersTitle: "User Management",
       transactionsTitle: "Payment Transactions",
       systemOp: "System Operational"
@@ -142,6 +144,41 @@ export const translations = {
       delete: {
         title: "Delete Customer",
         confirm: "Are you sure you want to delete this customer? This action cannot be undone."
+      }
+    },
+    suppliers: {
+      title: "Suppliers",
+      add: "Add Supplier",
+      search: "Search suppliers...",
+      noData: "No suppliers found.",
+      createFirst: "Add your first supplier",
+      form: {
+        addTitle: "Add New Supplier",
+        editTitle: "Edit Supplier",
+        name: "Supplier Name",
+        namePlaceholder: "e.g. Flour Co., Sugar Ltd.",
+        contactName: "Contact Person",
+        contactPlaceholder: "Contact name",
+        phone: "Phone",
+        email: "Email",
+        address: "Address",
+        addressPlaceholder: "Street, City",
+        note: "Note",
+        notePlaceholder: "Additional notes...",
+        save: "Save Supplier",
+        errors: {
+          nameRequired: "Supplier name is required",
+          saveFailed: "Unable to save supplier"
+        }
+      },
+      delete: {
+        title: "Delete Supplier",
+        confirm: "Are you sure you want to delete this supplier? This action cannot be undone."
+      },
+      table: {
+        name: "Supplier",
+        contact: "Contact",
+        actions: "Actions"
       }
     },
     users: {
@@ -292,6 +329,7 @@ export const translations = {
       orders: "Đơn hàng",
       inventory: "Kho hàng",
       customers: "Khách hàng",
+      suppliers: "Nhà cung cấp",
       users: "Quản lý người dùng",
       transactions: "Giao dịch",
       settings: "Cài đặt",
@@ -304,6 +342,7 @@ export const translations = {
       ordersTitle: "Quản lý đơn hàng",
       inventoryTitle: "Kho sản phẩm",
       customersTitle: "Quản lý khách hàng",
+      suppliersTitle: "Quản lý nhà cung cấp",
       transactionsTitle: "Lịch sử giao dịch",
       usersTitle: "Quản lý người dùng",
       systemOp: "Hệ thống ổn định"
@@ -425,6 +464,41 @@ export const translations = {
       delete: {
         title: "Xóa khách hàng",
         confirm: "Bạn có chắc chắn muốn xóa khách hàng này không? Hành động này không thể hoàn tác."
+      }
+    },
+    suppliers: {
+      title: "Nhà cung cấp",
+      add: "Thêm nhà cung cấp",
+      search: "Tìm kiếm nhà cung cấp...",
+      noData: "Không tìm thấy nhà cung cấp.",
+      createFirst: "Thêm nhà cung cấp đầu tiên",
+      form: {
+        addTitle: "Thêm nhà cung cấp mới",
+        editTitle: "Sửa nhà cung cấp",
+        name: "Tên nhà cung cấp",
+        namePlaceholder: "VD: Công ty Bột, Cty Đường",
+        contactName: "Người liên hệ",
+        contactPlaceholder: "Tên người liên hệ",
+        phone: "Số điện thoại",
+        email: "Email",
+        address: "Địa chỉ",
+        addressPlaceholder: "Số nhà, đường, thành phố",
+        note: "Ghi chú",
+        notePlaceholder: "Ghi chú thêm...",
+        save: "Lưu nhà cung cấp",
+        errors: {
+          nameRequired: "Tên nhà cung cấp là bắt buộc",
+          saveFailed: "Không thể lưu nhà cung cấp"
+        }
+      },
+      delete: {
+        title: "Xóa nhà cung cấp",
+        confirm: "Bạn có chắc chắn muốn xóa nhà cung cấp này không? Hành động này không thể hoàn tác."
+      },
+      table: {
+        name: "Nhà cung cấp",
+        contact: "Liên hệ",
+        actions: "Thao tác"
       }
     },
     users: {
