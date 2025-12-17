@@ -122,6 +122,33 @@ export const translations = {
       inactive: "Inactive",
       deleteConfirm: "Are you sure you want to delete this product?"
     },
+    ingredients: {
+      title: "Ingredients",
+      quantity: "Quantity",
+      add: "Add Ingredient",
+      searchPlaceholder: "Search ingredients...",
+      noData: "No ingredients found.",
+      createFirst: "Add your first ingredient",
+      noSupplier: "No supplier",
+      deleteConfirm: "Are you sure you want to delete this ingredient?",
+      form: {
+        addTitle: "Add Ingredient",
+        editTitle: "Edit Ingredient",
+        name: "Ingredient Name",
+        namePlaceholder: "e.g. Flour, Sugar",
+        supplier: "Supplier",
+        supplierPlaceholder: "Supplier name",
+        quantity: "Quantity",
+        unit: "Unit",
+        note: "Note",
+        notePlaceholder: "Additional notes...",
+        save: "Save Ingredient",
+        errors: {
+          nameRequired: "Ingredient name is required",
+          saveFailed: "Unable to save ingredient"
+        }
+      }
+    },
     customers: {
       title: "Customers",
       add: "Add Customer",
@@ -275,6 +302,8 @@ export const translations = {
       placedOn: "Placed on",
       tabDetails: "Order Details",
       tabAi: "AI Assistant",
+      history: "History",
+      historyEmptyAll: "No history available",
       customer: "Customer",
       shippingAddress: "Shipping Address",
       items: "Items",
@@ -447,6 +476,33 @@ export const translations = {
       inactive: "Ngừng bán",
       deleteConfirm: "Bạn có chắc chắn muốn xóa sản phẩm này không?"
     },
+    ingredients: {
+      title: "Nguyên liệu",
+      quantity: "Số lượng",
+      add: "Thêm nguyên liệu",
+      searchPlaceholder: "Tìm nguyên liệu...",
+      noData: "Không có nguyên liệu nào.",
+      createFirst: "Thêm nguyên liệu đầu tiên",
+      noSupplier: "Chưa có nhà cung cấp",
+      deleteConfirm: "Bạn có chắc chắn muốn xóa nguyên liệu này không?",
+      form: {
+        addTitle: "Thêm nguyên liệu",
+        editTitle: "Sửa nguyên liệu",
+        name: "Tên nguyên liệu",
+        namePlaceholder: "VD: Bột mì, Đường",
+        supplier: "Nhà cung cấp",
+        supplierPlaceholder: "Tên nhà cung cấp",
+        quantity: "Số lượng",
+        unit: "Đơn vị",
+        note: "Ghi chú",
+        notePlaceholder: "Thêm ghi chú...",
+        save: "Lưu nguyên liệu",
+        errors: {
+          nameRequired: "Tên nguyên liệu là bắt buộc",
+          saveFailed: "Không thể lưu nguyên liệu"
+        }
+      }
+    },
     customers: {
       title: "Khách hàng",
       add: "Thêm khách hàng",
@@ -600,6 +656,8 @@ export const translations = {
       placedOn: "Đặt lúc",
       tabDetails: "Chi tiết đơn",
       tabAi: "Trợ lý AI",
+      history: "Lịch sử",
+      historyEmptyAll: "Chưa có lịch sử",
       customer: "Khách hàng",
       shippingAddress: "Địa chỉ nhận hàng",
       items: "Sản phẩm",

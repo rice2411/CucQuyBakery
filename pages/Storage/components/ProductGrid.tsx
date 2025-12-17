@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Tag, Edit2, Trash2 } from 'lucide-react';
+import { Package, Tag } from 'lucide-react';
 import { Product } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatVND } from '@/utils/currencyUtil';
@@ -8,11 +8,10 @@ interface ProductGridProps {
   products: Product[];
   loading: boolean;
   onEdit: (product: Product) => void;
-  onDelete: (id: string) => void;
   onCreate: () => void;
 }
 
-const ProductGrid: React.FC<ProductGridProps> = ({ products, loading, onEdit, onDelete, onCreate }) => {
+const ProductGrid: React.FC<ProductGridProps> = ({ products, loading, onEdit, onCreate }) => {
   const { t } = useLanguage();
 
   if (loading) {
@@ -41,7 +40,11 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, loading, onEdit, on
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-6">
       {products.map(product => (
-        <div key={product.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden group hover:shadow-md transition-all">
+        <div
+          key={product.id}
+          onClick={() => onEdit(product)}
+          className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden group hover:shadow-md hover:border-orange-200 dark:hover:border-orange-500 transition-all cursor-pointer"
+        >
           <div className="aspect-square bg-slate-100 dark:bg-slate-900 relative overflow-hidden">
             <img
               src={product.image}
@@ -75,20 +78,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, loading, onEdit, on
               <span className="font-bold text-orange-600 dark:text-orange-400">
                 {formatVND(product.price)}
               </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => onEdit(product)}
-                  className="p-1.5 text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => onDelete(product.id)}
-                  className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              <div className="text-xs text-slate-400 dark:text-slate-500">{t('inventory.formTitleEdit')}</div>
             </div>
           </div>
         </div>
