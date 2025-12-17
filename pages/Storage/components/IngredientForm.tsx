@@ -102,7 +102,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
-              {t('detail.tabDetails')}
+              {t('ingredients.tabDetails')}
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -112,7 +112,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
-              {t('detail.history')}
+              {t('ingredients.tabHistory')}
             </button>
           </div>
 
@@ -214,10 +214,10 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
             ) : (
               <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-4">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wide">
-                  {t('detail.history')}
+                  {t('ingredients.tabHistory')}
                 </h3>
                 <div className="text-sm text-slate-500 dark:text-slate-400">
-                  {t('detail.historyEmptyAll') || 'Chưa có lịch sử cho nguyên liệu này.'}
+                  {t('ingredients.historyEmpty')}
                 </div>
               </div>
             )}

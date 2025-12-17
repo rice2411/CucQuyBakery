@@ -131,6 +131,9 @@ export const translations = {
       createFirst: "Add your first ingredient",
       noSupplier: "No supplier",
       deleteConfirm: "Are you sure you want to delete this ingredient?",
+      tabDetails: "Ingredient Details",
+      tabHistory: "History",
+      historyEmpty: "No history for this ingredient yet.",
       form: {
         addTitle: "Add Ingredient",
         editTitle: "Edit Ingredient",
@@ -485,6 +488,9 @@ export const translations = {
       createFirst: "Thêm nguyên liệu đầu tiên",
       noSupplier: "Chưa có nhà cung cấp",
       deleteConfirm: "Bạn có chắc chắn muốn xóa nguyên liệu này không?",
+      tabDetails: "Chi tiết nguyên liệu",
+      tabHistory: "Lịch sử",
+      historyEmpty: "Chưa có lịch sử cho nguyên liệu này.",
       form: {
         addTitle: "Thêm nguyên liệu",
         editTitle: "Sửa nguyên liệu",
