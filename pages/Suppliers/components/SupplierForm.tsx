@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Save, User, Phone, Mail, MapPin, FileText, AlertCircle } from 'lucide-react';
-import { Supplier } from '@/types';
+import { Save, User, Phone, Mail, MapPin, FileText, AlertCircle, Store } from 'lucide-react';
+import { Supplier, SupplierType } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BaseModal from '@/components/BaseModal';
 
@@ -22,6 +22,7 @@ const SupplierForm: React.FC<SupplierFormProps> = ({ isOpen, initialData, onSave
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
+  const [type, setType] = useState<SupplierType>(SupplierType.GROCERY);
 
   useEffect(() => {
     if (initialData) {
@@ -31,6 +32,7 @@ const SupplierForm: React.FC<SupplierFormProps> = ({ isOpen, initialData, onSave
       setEmail(initialData.email || '');
       setAddress(initialData.address || '');
       setNote(initialData.note || '');
+      setType(initialData.type || SupplierType.GROCERY);
     } else {
       setName('');
       setContactName('');
@@ -38,6 +40,7 @@ const SupplierForm: React.FC<SupplierFormProps> = ({ isOpen, initialData, onSave
       setEmail('');
       setAddress('');
       setNote('');
+      setType(SupplierType.GROCERY);
     }
     setError(null);
   }, [initialData, isOpen]);
@@ -53,6 +56,7 @@ const SupplierForm: React.FC<SupplierFormProps> = ({ isOpen, initialData, onSave
       const formData = {
         id: initialData?.id,
         name: name.trim(),
+        type,
         contactName: contactName.trim(),
         phone: phone.trim(),
         email: email.trim(),
@@ -110,6 +114,27 @@ const SupplierForm: React.FC<SupplierFormProps> = ({ isOpen, initialData, onSave
           )}
 
           <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('suppliers.form.type')}</label>
+          <div className="relative">
+            <Store className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as SupplierType)}
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+            >
+              {Object.values(SupplierType).map((value) => {
+                const key = value.toString().toLowerCase();
+                return (
+                  <option key={value} value={value}>
+                    {t(`suppliers.form.types.${key}`)}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+
+        <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('suppliers.form.name')} *</label>
             <div className="relative">
               <User className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />

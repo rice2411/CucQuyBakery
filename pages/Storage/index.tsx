@@ -110,9 +110,9 @@ const InventoryPage: React.FC = () => {
   const filteredIngredients = useMemo(() => {
     return ingredients.filter((ing) =>
       ing.name.toLowerCase().includes(ingredientSearch.toLowerCase()) ||
-      (ing.supplier || '').toLowerCase().includes(ingredientSearch.toLowerCase())
+      t(`ingredients.form.types.${ing.type}`).toLowerCase().includes(ingredientSearch.toLowerCase())
     );
-  }, [ingredients, ingredientSearch]);
+  }, [ingredients, ingredientSearch, t]);
 
 
   const renderTabContent = () => {

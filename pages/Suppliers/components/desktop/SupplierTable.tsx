@@ -1,6 +1,6 @@
 import React from 'react';
 import { Edit2, Trash2, Phone, Mail, MapPin } from 'lucide-react';
-import { Supplier } from '@/types';
+import { Supplier, SupplierType } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';  
 
 interface SupplierTableProps {
@@ -18,6 +18,7 @@ const SupplierTable: React.FC<SupplierTableProps> = ({ suppliers, onEdit, onDele
         <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-700 shadow-sm">
           <tr className="text-slate-600 dark:text-slate-300 text-xs font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-600">
             <th className="px-6 py-4">{t('suppliers.table.name')}</th>
+            <th className="px-6 py-4">{t('suppliers.form.type')}</th>
             <th className="px-6 py-4">{t('suppliers.table.contact')}</th>
             <th className="px-6 py-4">{t('suppliers.form.phone')}</th>
             <th className="px-6 py-4">{t('suppliers.form.email')}</th>
@@ -39,6 +40,9 @@ const SupplierTable: React.FC<SupplierTableProps> = ({ suppliers, onEdit, onDele
                       <p className="text-xs text-slate-400">#{supplier.id.substring(0,6)}</p>
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                  {t(`suppliers.form.types.${(supplier.type || SupplierType.GROCERY).toString().toLowerCase()}`)}
                 </td>
                 <td className="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">{supplier.contactName || '-'}</td>
                 <td className="px-6 py-4">

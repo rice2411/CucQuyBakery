@@ -15,21 +15,6 @@ import { Order, PaymentMethod, PaymentStatus } from "@/types";
 import { sendMessageToGroup } from "./zaloService";
 import { getUserByUid } from "./userService";
 
-//create a function to modifert one field of all order
-export const modifyOrderField = async (): Promise<void> => {
-  try {
-    const ordersRef = collection(db, "orders");
-    const q = query(ordersRef);
-    const snapshot = await getDocs(q);
-    for (const doc of snapshot.docs) {
-     const data = doc.data();
-    }
-  } catch (error) {
-    console.error("Error modifying order field:", error);
-    throw error;
-  }
-};
-
 /**
  * Lấy toàn bộ đơn hàng từ Firebase
  * @returns {Promise<Order[]>} Array of orders

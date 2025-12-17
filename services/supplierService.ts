@@ -1,6 +1,11 @@
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { Supplier } from '@/types';
+import { Supplier, SupplierType } from '@/types';
+
+const normalizeSupplierType = (val: any): SupplierType => {
+  const key = (val || '').toString().toUpperCase();
+  return Object.values(SupplierType).includes(key as SupplierType) ? (key as SupplierType) : SupplierType.GROCERY;
+};
 
 export const fetchSuppliers = async (): Promise<Supplier[]> => {
   try {
@@ -13,6 +18,7 @@ export const fetchSuppliers = async (): Promise<Supplier[]> => {
       return {
         id: docSnap.id,
         name: data.name || '',
+        type: normalizeSupplierType(data.type),
         contactName: data.contactName,
         phone: data.phone,
         email: data.email,
@@ -38,6 +44,7 @@ export const addSupplier = async (supplierData: Omit<Supplier, 'id'>): Promise<v
     const suppliersRef = collection(db, 'suppliers');
     await addDoc(suppliersRef, {
       name: supplierData.name.trim(),
+      type: supplierData.type || SupplierType.GROCERY,
       contactName: supplierData.contactName?.trim() || '',
       phone: supplierData.phone?.trim() || '',
       email: supplierData.email?.trim() || '',

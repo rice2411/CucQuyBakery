@@ -1,20 +1,34 @@
-export interface Ingredient {
-  id: string;
-  name: string;
-  supplier?: string;
-  quantity?: number;
-  unit?: string;
-  note?: string;
-  createdAt?: any;
-  updatedAt?: any;
+export enum IngredientType {
+  BASE = 'BASE',
+  FLAVOR = 'FLAVOR',
+  TOPPING = 'TOPPING',
+  DECORATION = 'DECORATION',
+  MATERIAL = 'MATERIAL',
 }
+export enum IngredientHistoryType {
+  IMPORT = 'IMPORT',
+  USAGE = 'USAGE',
+}
+
+export interface IngredientHistory {
+  id: string;
+  type: IngredientHistoryType;
+  quantity: number;
+  unit: 'g' | 'piece';
+  note?: string;
+  supplierId?: string;
+  supplierName?: string;
+  price?: number;
+  createdAt: string;
+}
+
 export interface Ingredient {
   id: string;
   name: string;
-  supplier?: string;
-  unit?: string;
-  quantity?: number;
-  note?: string;
+  type: IngredientType;
+  quantity: number;
+  unit: 'g' | 'piece';
+  history?: IngredientHistory[];
   createdAt?: any;
   updatedAt?: any;
 }
