@@ -5,6 +5,7 @@ import { STATUS_COLORS } from '@/constant/order';
 import { generateOrderAnalysis } from '@/services/geminiService';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatVND } from '@/utils/currencyUtil';
+import { generateQRCodeImage } from '@/utils/orderUtils';
 interface OrderDetailProps {
   order: Order | null;
   onClose: () => void;
@@ -53,15 +54,12 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, onClose, onEdit, onUpd
 
   const shippingCost = currentOrder.shippingCost || 0;
   
-  // Recalculate subtotal using standard logic
   const subtotal = currentOrder.items.reduce((sum, item) => sum + calculateLineItemTotal(item), 0);
   
-  // Ensure the displayed total is the sum of calculated subtotal + shipping
   const finalTotal = subtotal + shippingCost;
 
-  // QR Code Logic
-  const description = `Thanh toan don hang ${currentOrder.orderNumber || currentOrder.id}`;
-  const qrUrl = `https://qr.sepay.vn/img?acc=96247HTTH1308&bank=BIDV&amount=${Math.round(finalTotal)}&des=${encodeURIComponent(description)}&template=compact`;
+  const description = `Thanh toan don hang ${currentOrder.orderNumber}`;
+  const qrUrl =generateQRCodeImage(description, finalTotal);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);

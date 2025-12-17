@@ -3,6 +3,16 @@
 import * as XLSX from 'xlsx-js-style';
 import { Order } from '@/types/order';
 
+/**
+ * Tạo URL ảnh QR code thanh toán
+ * @param order - Đơn hàng
+ * @returns URL ảnh QR code thanh toán
+ */
+export const generateQRCodeImage = (description: string, total: number): string => {
+  const qrUrl = `https://qr.sepay.vn/img?acc=96247HTTH1308&bank=BIDV&amount=${Math.round(total)}&des=${encodeURIComponent(description)}&template=compact`;
+  return qrUrl;
+};
+
 
 /**
  * Tạo URL ảnh sản phẩm dựa trên loại sản phẩm

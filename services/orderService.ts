@@ -23,9 +23,6 @@ export const modifyOrderField = async (): Promise<void> => {
     const snapshot = await getDocs(q);
     for (const doc of snapshot.docs) {
      const data = doc.data();
-     if(['ORD-000115', 'ORD-000116', 'ORD-000117', 'ORD-000118', 'ORD-000119', 'ORD-000120' ].includes(data.orderNumber)) {
-      await updateDoc(doc.ref, { createdBy: 'ZBWg4SX0v8Nqew2odSew47kEwdf2' });
-     }
     }
   } catch (error) {
     console.error("Error modifying order field:", error);
