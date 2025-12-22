@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy, Timestamp, deleteField } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Recipe } from '@/types';
 
@@ -17,6 +17,10 @@ export const fetchRecipes = async (): Promise<Recipe[]> => {
         instructions: data.instructions || '',
         yield: data.yield || 0,
         yieldUnit: data.yieldUnit || '',
+        outputQuantity: data.outputQuantity || 0,
+        wasteRate: data.wasteRate || 0,
+        recipeType: data.recipeType || 'base',
+        baseRecipeId: data.baseRecipeId || '',
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       } as Recipe;
@@ -42,6 +46,10 @@ export const addRecipe = async (recipeData: Omit<Recipe, 'id'>): Promise<void> =
       instructions: recipeData.instructions || '',
       yield: recipeData.yield || 0,
       yieldUnit: recipeData.yieldUnit || '',
+      outputQuantity: recipeData.outputQuantity || 0,
+      wasteRate: recipeData.wasteRate || 0,
+      recipeType: recipeData.recipeType || 'base',
+      baseRecipeId: recipeData.baseRecipeId || '',
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
@@ -54,11 +62,26 @@ export const addRecipe = async (recipeData: Omit<Recipe, 'id'>): Promise<void> =
 export const updateRecipe = async (id: string, recipeData: Partial<Recipe>): Promise<void> => {
   try {
     const ref = doc(db, 'recipes', id);
-    const payload = {
-      ...recipeData,
+    const payload: any = {
       updatedAt: Timestamp.now(),
     };
-    await updateDoc(ref, payload as any);
+
+    Object.keys(recipeData).forEach((key) => {
+      const value = (recipeData as any)[key];
+      if (value !== undefined) {
+        if (key === 'baseRecipeId') {
+          if (value) {
+            payload[key] = value;
+          } else {
+            payload[key] = deleteField();
+          }
+        } else {
+          payload[key] = value;
+        }
+      }
+    });
+
+    await updateDoc(ref, payload);
   } catch (error) {
     console.error('Error updating recipe:', error);
     throw error;

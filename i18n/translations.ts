@@ -263,6 +263,15 @@ export const translations = {
         useCalculatedYield: "Use calculated",
         outputQuantity: "Output Quantity",
         wasteRate: "Waste Rate",
+        finalQuantity: "Final Quantity (After Waste)",
+        calculatedFinalQuantity: "Final Quantity",
+        available: "Available",
+        fromBaseRecipe: "From base recipe",
+        recipeType: "Recipe Type",
+        baseRecipe: "Base Recipe",
+        fullRecipe: "Full Recipe",
+        baseRecipeSelect: "Select Base Recipe",
+        selectBaseRecipe: "Select a base recipe...",
         availableIngredients: "Available",
         selectedIngredients: "Selected",
         selected: "selected",
@@ -276,6 +285,7 @@ export const translations = {
           nameRequired: "Recipe name is required",
           ingredientsRequired: "At least one ingredient is required",
           quantityRequired: "All ingredient quantities must be greater than 0",
+          baseRecipeRequired: "Please select a base recipe for full recipe",
           saveFailed: "Unable to save recipe"
         }
       }
@@ -761,6 +771,15 @@ export const translations = {
         useCalculatedYield: "Dùng giá trị tính toán",
         outputQuantity: "Số lượng thành phẩm",
         wasteRate: "Tỉ lệ hao hụt",
+        finalQuantity: "Số lượng bán cuối cùng",
+        calculatedFinalQuantity: "Số lượng bán",
+        available: "Còn lại",
+        fromBaseRecipe: "Từ công thức nền",
+        recipeType: "Loại công thức",
+        baseRecipe: "Công thức nền",
+        fullRecipe: "Công thức bánh",
+        baseRecipeSelect: "Chọn công thức nền",
+        selectBaseRecipe: "Chọn công thức nền...",
         availableIngredients: "Có sẵn",
         selectedIngredients: "Đã chọn",
         selected: "đã chọn",
@@ -774,6 +793,7 @@ export const translations = {
           nameRequired: "Tên công thức là bắt buộc",
           ingredientsRequired: "Cần ít nhất một nguyên liệu",
           quantityRequired: "Tất cả số lượng nguyên liệu phải lớn hơn 0",
+          baseRecipeRequired: "Vui lòng chọn công thức nền cho công thức bánh",
           saveFailed: "Không thể lưu công thức"
         }
       }

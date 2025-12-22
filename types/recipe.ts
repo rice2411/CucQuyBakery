@@ -5,6 +5,8 @@ export interface RecipeIngredient {
   unit: 'g' | 'piece';
 }
 
+export type RecipeType = 'base' | 'full';
+
 export interface Recipe {
   id: string;
   name: string;
@@ -15,6 +17,8 @@ export interface Recipe {
   yieldUnit?: string;
   outputQuantity?: number;
   wasteRate?: number;
+  recipeType?: RecipeType;
+  baseRecipeId?: string;
   createdAt?: any;
   updatedAt?: any;
 }

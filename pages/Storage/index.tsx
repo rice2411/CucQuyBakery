@@ -273,6 +273,7 @@ const InventoryPage: React.FC = () => {
           ingredients={ingredients}
           onSave={handleSaveRecipe}
           onClose={() => setIsRecipeFormOpen(false)}
+          baseRecipes={recipes.filter(r => r.recipeType === 'base' || (!r.recipeType && !r.baseRecipeId))}
         />
       )}
 

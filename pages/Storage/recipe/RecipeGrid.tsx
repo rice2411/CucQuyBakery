@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Loader2, ChefHat, List, Trash2 } from 'lucide-react';
+import { BookOpen, Loader2, ChefHat, List, Trash2, Layers, Cake } from 'lucide-react';
 import { Recipe } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -13,6 +13,29 @@ interface RecipeGridProps {
 
 const RecipeGrid: React.FC<RecipeGridProps> = ({ recipes, loading, onEdit, onCreate, onDelete }) => {
   const { t } = useLanguage();
+
+  const getRecipeTypeInfo = (recipe: Recipe) => {
+    const recipeType = recipe.recipeType || (recipe.baseRecipeId ? 'full' : 'base');
+    if (recipeType === 'full') {
+      return {
+        label: t('recipes.form.fullRecipe'),
+        icon: Cake,
+        bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+        textColor: 'text-purple-700 dark:text-purple-300',
+        borderColor: 'border-purple-200 dark:border-purple-800',
+        cardBorder: 'border-purple-300 dark:border-purple-700',
+      };
+    } else {
+      return {
+        label: t('recipes.form.baseRecipe'),
+        icon: Layers,
+        bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+        textColor: 'text-blue-700 dark:text-blue-300',
+        borderColor: 'border-blue-200 dark:border-blue-800',
+        cardBorder: 'border-blue-300 dark:border-blue-700',
+      };
+    }
+  };
 
   if (loading) {
     return (
@@ -40,39 +63,57 @@ const RecipeGrid: React.FC<RecipeGridProps> = ({ recipes, loading, onEdit, onCre
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {recipes.map((recipe) => (
-        <div
-          key={recipe.id}
-          className="group relative bg-white dark:bg-slate-800 rounded-xl border-2 border-orange-200 dark:border-orange-800 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-200 overflow-hidden"
-        >
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(recipe);
-              }}
-              className="absolute top-2 right-2 z-10 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-              title={t('recipes.delete')}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
+      {recipes.map((recipe) => {
+        const typeInfo = getRecipeTypeInfo(recipe);
+        const TypeIcon = typeInfo.icon;
+        const finalQuantity = recipe.outputQuantity && recipe.wasteRate !== undefined
+          ? Math.round(recipe.outputQuantity * (1 - recipe.wasteRate / 100) * 100) / 100
+          : null;
+
+        return (
           <div
-            onClick={() => onEdit(recipe)}
-            className="p-4 cursor-pointer"
+            key={recipe.id}
+            className={`group relative bg-white dark:bg-slate-800 rounded-xl border-2 ${typeInfo.cardBorder} shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all duration-200 overflow-hidden`}
           >
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center border border-orange-200 dark:border-orange-800">
-                  <ChefHat className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1 text-sm">
-                    {recipe.name}
-                  </h4>
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(recipe);
+                }}
+                className="absolute top-2 right-2 z-10 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                title={t('recipes.delete')}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            <div
+              onClick={() => onEdit(recipe)}
+              className="p-4 cursor-pointer"
+            >
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className={`flex-shrink-0 w-10 h-10 rounded-lg ${typeInfo.bgColor} flex items-center justify-center border ${typeInfo.borderColor}`}>
+                    <TypeIcon className={`w-5 h-5 ${typeInfo.textColor}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1 text-sm">
+                      {recipe.name}
+                    </h4>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${typeInfo.bgColor} ${typeInfo.textColor} border ${typeInfo.borderColor}`}>
+                  {typeInfo.label}
+                </span>
+                {recipe.recipeType === 'full' && recipe.baseRecipeId && (
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    {t('recipes.form.fromBaseRecipe')}
+                  </span>
+                )}
+              </div>
 
             {recipe.description && (
               <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
@@ -80,11 +121,19 @@ const RecipeGrid: React.FC<RecipeGridProps> = ({ recipes, loading, onEdit, onCre
               </p>
             )}
 
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-3">
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-3 flex-wrap">
               <List className="w-3.5 h-3.5" />
               <span>
                 {recipe.ingredients?.length || 0} {t('recipes.ingredients')}
               </span>
+              {finalQuantity && finalQuantity > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="font-semibold text-orange-600 dark:text-orange-400">
+                    {finalQuantity.toLocaleString()} {t('recipes.form.calculatedFinalQuantity')}
+                  </span>
+                </>
+              )}
               {recipe.yield && recipe.yield > 0 && (
                 <>
                   <span>•</span>
@@ -118,7 +167,8 @@ const RecipeGrid: React.FC<RecipeGridProps> = ({ recipes, loading, onEdit, onCre
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
