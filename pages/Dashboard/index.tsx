@@ -1,11 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { OrderStatus } from '@/types';
+import { Order, OrderStatus } from '@/types';
 import { generateDashboardInsights } from '@/services/geminiService';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useOrders } from '@/contexts/OrderContext';
 import DashboardMetrics from '@/pages/Dashboard/components/DashboardMetrics';
 import DashboardChart from '@/pages/Dashboard/components/DashboardChart';
 import DashboardInsights from '@/pages/Dashboard/components/DashboardInsights';
+import DashboardRecentOrders from '@/pages/Dashboard/components/DashboardRecentOrders';
+import DashboardRecentTransactions from '@/pages/Dashboard/components/DashboardRecentTransactions';
+import DashboardRecentUsers from '@/pages/Dashboard/components/DashboardRecentUsers';
 
 type TimeRange = 'week' | 'month' | 'year';
 
@@ -203,6 +206,11 @@ const DashboardPage: React.FC = () => {
     setLoadingInsight(false);
   };
 
+  const recentOrdersForDashboard: Order[] = useMemo(
+    () => [...orders].sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()),
+    [orders]
+  );
+
   return (
     <div className="space-y-6 animate-fade-in">
       <DashboardMetrics 
@@ -231,6 +239,11 @@ const DashboardPage: React.FC = () => {
           loading={loadingInsight}
           onGenerate={handleGenerateInsight}
         />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <DashboardRecentOrders orders={recentOrdersForDashboard} />
+        <DashboardRecentTransactions />
+        <DashboardRecentUsers />
       </div>
     </div>
   );
