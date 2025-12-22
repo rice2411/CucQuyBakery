@@ -12,6 +12,7 @@ export interface OrderFiltersState {
   paymentMethodFilter: string;
   dateFrom: string;
   dateTo: string;
+  dateType: 'orderDate' | 'deliveryDate';
 }
 
 interface OrderFiltersModalProps {
@@ -41,13 +42,27 @@ const OrderFiltersModal: React.FC<OrderFiltersModalProps> = ({ isOpen, initialVa
     }
 
     const current = new Date(start);
-    while (current <= now || (current.getMonth() === now.getMonth() && current.getFullYear() === now.getFullYear())) {
+    const maxIterations = 120;
+    let iterations = 0;
+    
+    while (iterations < maxIterations) {
+      const currentYear = current.getFullYear();
+      const currentMonth = current.getMonth();
+      const nowYear = now.getFullYear();
+      const nowMonth = now.getMonth();
+      
+      if (currentYear > nowYear || (currentYear === nowYear && currentMonth > nowMonth)) {
+        break;
+      }
+      
       const label = current.toLocaleDateString(language === 'vi' ? 'vi-VN' : 'en-US', { month: 'long', year: 'numeric' });
-      const value = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+      const value = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
       options.push({ value, label });
-      current.setMonth(current.getMonth() + 1);
-      if (current.getFullYear() > now.getFullYear() + 1) break;
+      
+      current.setMonth(currentMonth + 1);
+      iterations++;
     }
+    
     return options.reverse();
   }, [language]);
 
@@ -157,6 +172,40 @@ const OrderFiltersModal: React.FC<OrderFiltersModalProps> = ({ isOpen, initialVa
                 <option value="CASH">{t('paymentMethod.cash')}</option>
                 <option value="BANKING">{t('paymentMethod.banking')}</option>
               </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                {t('orders.dateType')}
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="dateType"
+                    value="orderDate"
+                    checked={values.dateType === 'orderDate'}
+                    onChange={(e) => handleChange('dateType', e.target.value)}
+                    className="w-4 h-4 text-orange-600 border-slate-300 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-200">
+                    {t('orders.orderDateLabel')}
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="dateType"
+                    value="deliveryDate"
+                    checked={values.dateType === 'deliveryDate'}
+                    onChange={(e) => handleChange('dateType', e.target.value)}
+                    className="w-4 h-4 text-orange-600 border-slate-300 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-200">
+                    {t('orders.deliveryDateLabel')}
+                  </span>
+                </label>
+              </div>
             </div>
 
             <div>

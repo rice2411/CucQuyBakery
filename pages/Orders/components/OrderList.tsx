@@ -26,6 +26,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('All');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
+  const [dateType, setDateType] = useState<'orderDate' | 'deliveryDate'>('orderDate');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const [sortField, setSortField] = useState<keyof Order>('date');
@@ -53,69 +54,97 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       const normalizedSearch = searchTerm.toLowerCase().trim();
-      // Basic Search (ID or Customer Name or Order Number)
-      const matchesSearch = 
-        order.id.toLowerCase().includes(normalizedSearch) ||
+      const matchesSearch = normalizedSearch === '' || 
+        (order.id && order.id.toLowerCase().includes(normalizedSearch)) ||
         (order.orderNumber && order.orderNumber.toLowerCase().includes(normalizedSearch)) ||
-        order.customer.name.toLowerCase().includes(normalizedSearch) ||
-        (order.customer.phone && order.customer.phone.toLowerCase().includes(normalizedSearch));
+        (order.customer?.name && order.customer.name.toLowerCase().includes(normalizedSearch)) ||
+        (order.customer?.phone && order.customer.phone.toLowerCase().includes(normalizedSearch));
       
-      // Status Filter
       const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
       
-      // Product Filter
-      const matchesProduct = !productFilter || order.items.some(item => 
-        item.name.toLowerCase().includes(productFilter.toLowerCase())
-      );
+      const matchesProduct = !productFilter || 
+        (order.items && order.items.length > 0 && order.items.some(item => 
+          item?.name && item.name.toLowerCase().includes(productFilter.toLowerCase())
+        ));
 
-      // Month Filter
       let matchesDate = true;
       if (selectedMonth) {
-        const [filterYear, filterMonth] = selectedMonth.split('-').map(Number);
-        const orderDate = parseDateValue(order.orderDate || order.date);
-        if (!orderDate || orderDate.getFullYear() !== filterYear || (orderDate.getMonth() + 1) !== filterMonth) {
-          matchesDate = false;
+        const monthParts = selectedMonth.split('-');
+        if (monthParts.length === 2) {
+          const filterYear = Number(monthParts[0]);
+          const filterMonth = Number(monthParts[1]);
+          if (!isNaN(filterYear) && !isNaN(filterMonth) && filterMonth >= 1 && filterMonth <= 12) {
+            const targetDate = dateType === 'deliveryDate' 
+              ? parseDateValue(order.deliveryDate)
+              : parseDateValue(order.orderDate || order.date);
+            if (!targetDate || targetDate.getFullYear() !== filterYear || (targetDate.getMonth() + 1) !== filterMonth) {
+              matchesDate = false;
+            }
+          }
         }
       }
 
-      // Payment status filter
       const matchesPaymentStatus = paymentStatusFilter === 'All' || order.paymentStatus === paymentStatusFilter;
-
-      // Payment method filter
       const matchesPaymentMethod = paymentMethodFilter === 'All' || order.paymentMethod === paymentMethodFilter;
 
-      // Date range filter (orderDate or date)
       let matchesRange = true;
       if (dateFrom || dateTo) {
-        const parsed = parseDateValue(order.orderDate || order.date);
+        const targetDate = dateType === 'deliveryDate'
+          ? parseDateValue(order.deliveryDate)
+          : parseDateValue(order.orderDate || order.date);
         const fromDate = dateFrom ? parseDateValue(dateFrom) : null;
         const toDate = dateTo ? parseDateValue(dateTo) : null;
-        if (parsed) {
-          if (fromDate && parsed < fromDate) matchesRange = false;
+        
+        if (!targetDate) {
+          matchesRange = false;
+        } else {
+          if (fromDate && targetDate < fromDate) {
+            matchesRange = false;
+          }
           if (toDate) {
-            // include end day
             const end = new Date(toDate);
             end.setHours(23, 59, 59, 999);
-            if (parsed > end) matchesRange = false;
+            if (targetDate > end) {
+              matchesRange = false;
+            }
           }
-        } else if (dateFrom || dateTo) {
-          matchesRange = false;
         }
       }
 
       return matchesSearch && matchesStatus && matchesProduct && matchesDate && matchesPaymentStatus && matchesPaymentMethod && matchesRange;
     }).sort((a, b) => {
-      // Sorting logic
-      if (a[sortField]! < b[sortField]!) return sortDirection === 'asc' ? -1 : 1;
-      if (a[sortField]! > b[sortField]!) return sortDirection === 'asc' ? 1 : -1;
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+      
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return sortDirection === 'asc' ? -1 : 1;
+      if (bValue == null) return sortDirection === 'asc' ? 1 : -1;
+      
+      const aDate = parseDateValue(aValue);
+      const bDate = parseDateValue(bValue);
+      
+      if (aDate && bDate) {
+        return sortDirection === 'asc' 
+          ? aDate.getTime() - bDate.getTime()
+          : bDate.getTime() - aDate.getTime();
+      }
+      
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      
+      const aStr = String(aValue);
+      const bStr = String(bValue);
+      if (aStr < bStr) return sortDirection === 'asc' ? -1 : 1;
+      if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [orders, searchTerm, statusFilter, sortField, sortDirection, productFilter, selectedMonth, paymentStatusFilter, paymentMethodFilter, dateFrom, dateTo]);
+  }, [orders, searchTerm, statusFilter, sortField, sortDirection, productFilter, selectedMonth, paymentStatusFilter, paymentMethodFilter, dateFrom, dateTo, dateType]);
 
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, productFilter, selectedMonth, paymentStatusFilter, paymentMethodFilter, dateFrom, dateTo]);
+  }, [searchTerm, statusFilter, productFilter, selectedMonth, paymentStatusFilter, paymentMethodFilter, dateFrom, dateTo, dateType]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
@@ -199,6 +228,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
           paymentMethodFilter,
           dateFrom,
           dateTo,
+          dateType,
         }}
         onApply={(values: OrderFiltersState) => {
           setSearchTerm(values.searchTerm);
@@ -209,6 +239,7 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
           setPaymentMethodFilter(values.paymentMethodFilter);
           setDateFrom(values.dateFrom);
           setDateTo(values.dateTo);
+          setDateType(values.dateType);
           setIsAdvancedOpen(false);
         }}
       />
