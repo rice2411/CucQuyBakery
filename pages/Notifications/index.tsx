@@ -10,6 +10,7 @@ import {
   sendCustomNotification 
 } from '@/services/zaloService';
 import toast from 'react-hot-toast';
+import { parseDateValue } from '@/utils/dateUtil';
 
 type NotificationType = 'unpaid' | 'pending' | 'delivery' | 'custom';
 
@@ -20,23 +21,6 @@ const NotificationsPage: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [customMessage, setCustomMessage] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
-
-  const parseDateValue = (value: any): Date | null => {
-    if (!value) return null;
-    if (value instanceof Date) return value;
-    if (typeof value === 'string' || typeof value === 'number') {
-      const parsed = new Date(value);
-      return isNaN(parsed.getTime()) ? null : parsed;
-    }
-    if (typeof value === 'object' && typeof value.toDate === 'function') {
-      try {
-        return value.toDate();
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  };
 
   const unpaidOrders = useMemo(() => {
     return orders.filter(order => order.paymentStatus === PaymentStatus.UNPAID);
@@ -128,8 +112,8 @@ const NotificationsPage: React.FC = () => {
     switch (selectedType) {
       case 'unpaid':
         return unpaidOrders.length;
-      case 'paid':
-        return paidOrders.length;
+      case 'pending':
+        return pendingOrders.length;
       case 'delivery':
         return deliveryDueOrders.length;
       default:

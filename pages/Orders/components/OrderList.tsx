@@ -6,6 +6,7 @@ import OrderListMobile from './mobile/OrderListMobile';
 import OrderListDesktop from './desktop/OrderListDesktop';
 import OrderFiltersToolbar from './OrderFiltersToolbar';
 import OrderFiltersModal, { OrderFiltersState } from './OrderFiltersModal';
+import { parseDateValue } from '@/utils/dateUtil';
 
 interface OrderListProps {
   orders: Order[];
@@ -33,23 +34,6 @@ const OrderList: React.FC<OrderListProps> = ({ orders, onSelectOrder, onDeleteOr
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const parseDateValue = (value: any) => {
-    if (!value) return null;
-    if (value instanceof Date) return value;
-    if (typeof value === 'string' || typeof value === 'number') {
-      const parsed = new Date(value);
-      return isNaN(parsed.getTime()) ? null : parsed;
-    }
-    if (typeof value === 'object' && typeof value.toDate === 'function') {
-      try {
-        return value.toDate();
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  };
 
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {

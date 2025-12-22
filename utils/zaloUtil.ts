@@ -1,5 +1,6 @@
 import { Order } from "@/types";
 import { parseDateValue } from "./dateUtil";
+import { formatVND } from "./currencyUtil";
 
 export const formatDate = (date: Date | null): string => {
   if (!date) return '(không có)';
@@ -12,9 +13,6 @@ export const formatDate = (date: Date | null): string => {
   });
 };
 
-export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-};
 
 export const formatOrderMessage = (order: any): string => {
   const orderDate = parseDateValue(order.orderDate || order.date);
@@ -39,7 +37,7 @@ export const formatOrderMessage = (order: any): string => {
 📞 SĐT: ${order.customer?.phone || '(không có)'}
 🏠 Địa chỉ: ${order.customer?.address || '(không có)'}
 
-💰 Phí ship: ${formatCurrency(order.shippingCost || 0)}
+💰 Phí ship: ${formatVND(order.shippingCost || 0)}
 💬 Ghi chú: ${order.note || '(không có)'}
 
 📦 Số lượng sản phẩm: ${totalItems} ${totalItems === 1 ? 'sản phẩm' : 'sản phẩm'}\n`;
@@ -52,7 +50,7 @@ export const formatOrderMessage = (order: any): string => {
     message += `\n`;
   }
 
-  message += `💰 Tổng tiền: ${formatCurrency(order.total)}
+  message += `💰 Tổng tiền: ${formatVND(order.total)}
 `;
 
   return message;
@@ -66,7 +64,7 @@ export const formatUnpaidOrdersMessage = (orders: Order[]): string => {
   const totalUnpaid = orders.reduce((sum, order) => sum + order.total, 0);
   let message = `⚠️ == THÔNG BÁO ĐƠN HÀNG CHƯA THANH TOÁN ==\n\n`;
   message += `📊 Tổng số đơn: ${orders.length}\n`;
-  message += `💰 Tổng tiền: ${formatCurrency(totalUnpaid)}\n\n`;
+  message += `💰 Tổng tiền: ${formatVND(totalUnpaid)}\n\n`;
   message += `📋 Danh sách đơn hàng:\n`;
 
   orders.forEach((order, index) => {
@@ -75,7 +73,7 @@ export const formatUnpaidOrdersMessage = (orders: Order[]): string => {
     message += `   👤 ${order.customer?.name || '(không có)'}\n`;
     message += `   📞 ${order.customer?.phone || '(không có)'}\n`;
     message += `   🕒 ${formatDate(orderDate)}\n`;
-    message += `   💰 ${formatCurrency(order.total)}\n`;
+    message += `   💰 ${formatVND(order.total)}\n`;
   });
 
   return message;
@@ -89,7 +87,7 @@ export const formatPendingOrdersMessage = (orders: Order[]): string => {
   const totalPending = orders.reduce((sum, order) => sum + order.total, 0);
   let message = `⚠️ == THÔNG BÁO ĐƠN HÀNG CẦN XỬ LÝ ==\n\n`;
   message += `📊 Tổng số đơn: ${orders.length}\n`;
-  message += `💰 Tổng tiền: ${formatCurrency(totalPending)}\n\n`;
+  message += `💰 Tổng tiền: ${formatVND(totalPending)}\n\n`;
   message += `📋 Danh sách đơn hàng:\n`;
 
   orders.forEach((order, index) => {
@@ -111,7 +109,7 @@ export const formatPendingOrdersMessage = (orders: Order[]): string => {
     message += `   📦 Số lượng sản phẩm: ${totalItems} ${totalItems === 1 ? 'sản phẩm' : 'sản phẩm'}\n`;
     message += `   📦 Trạng thái: ${order.status}\n`;
     message += `   💳 Thanh toán: ${order.paymentStatus}\n`;
-    message += `   💰 ${formatCurrency(order.total)}\n`;
+    message += `   💰 ${formatVND(order.total)}\n`;
   });
 
   return message;
@@ -155,7 +153,7 @@ export const formatDeliveryDueMessage = (orders: Order[], targetDate?: Date): st
       });
     }
     
-    message += `   💰 ${formatCurrency(order.total)}\n`;
+    message += `   💰 ${formatVND(order.total)}\n`;
   });
 
   return message;
@@ -168,7 +166,7 @@ export const formatPaymentReceivedMessage = (orderNumber: string | null, transac
     message += `🆔 Mã đơn: ${orderNumber}\n`;
   }
   
-  message += `💰 Số tiền đã thanh toán: ${formatCurrency(transactionAmount)}\n`;
+  message += `💰 Số tiền đã thanh toán: ${formatVND(transactionAmount)}\n`;
   message += `✅ Trạng thái: ĐÃ THANH TOÁN\n`;
 
   return message;
