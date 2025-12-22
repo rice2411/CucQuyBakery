@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Package, Download } from 'lucide-react';
+import { Plus, Package, Download, RefreshCw } from 'lucide-react';
 import { useOrders } from '@/contexts/OrderContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Order } from '@/types';
@@ -8,6 +8,7 @@ import OrderDetail from '@/pages/Orders/components/OrderDetail';
 import OrderForm from '@/pages/Orders/components/OrderForm';
 import ConfirmModal from '@/components/ConfirmModal';
 import ExportModal from '@/pages/Orders/components/ExportModal';
+import toast from 'react-hot-toast';
 
 const OrdersPage: React.FC = () => {
   const { orders, createNewOrder, modifyOrder, removeOrder, refreshOrders } = useOrders();
@@ -24,6 +25,7 @@ const OrdersPage: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const handleOrderSelect = (order: Order) => {
     setSelectedOrder(order);
@@ -68,11 +70,34 @@ const OrdersPage: React.FC = () => {
     }
     setIsOrderFormOpen(false);
   };
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await refreshOrders();
+      toast.success(t('orders.refreshSuccess'));
+    } catch (error) {
+      console.error('Failed to refresh orders:', error);
+      toast.error(t('orders.refreshError'));
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   
   return (
     <div className="h-full relative">
       <div className="mb-4 flex flex-col sm:flex-row justify-end items-center gap-3">
         <div className="flex gap-2 w-full sm:w-auto">
+          <button 
+             onClick={handleRefresh}
+             disabled={isRefreshing}
+             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+           >
+             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+             <span className="hidden sm:inline">{t('orders.refresh')}</span>
+           </button>
           <button 
              onClick={() => setIsExportModalOpen(true)}
              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors"
