@@ -16,7 +16,8 @@ export const translations = {
       settings: "Settings",
       signOut: "Sign Out",
       newOrder: "New Order",
-      soon: "SOON"
+      soon: "SOON",
+      add: "More"
     },
     header: {
       dashboardTitle: "Dashboard Overview",
@@ -541,7 +542,8 @@ export const translations = {
       settings: "Cài đặt",
       signOut: "Đăng xuất",
       newOrder: "Tạo đơn",
-      soon: "SẮP RA"
+      soon: "SẮP RA",
+      add: "Thêm"
     },
     header: {
       dashboardTitle: "Tổng quan hệ thống",
