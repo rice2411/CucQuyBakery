@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertCircle, ChefHat, Save, X, Search, AlignLeft, FlaskConical, Sparkles, Layers, Cake, CheckCircle2, Box } from 'lucide-react';
+import { AlertCircle, ChefHat, Save, X, Search, AlignLeft, FlaskConical, Sparkles, Layers, Cake, CheckCircle2, Box, Edit, Calculator, CheckCircle, XCircle, Package } from 'lucide-react';
 import { Recipe, RecipeIngredient, Ingredient, IngredientType } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { calculateCurrentQuantity, isLowStock, isOutOfStock } from '@/utils/ingredientUtil';
+import { calculateIngredientRequirements, checkAllIngredientsSufficient, calculateRequiredRecipeCount, calculateMaxPossibleProductQuantity } from '@/utils/recipeUtil';
 import { fetchRecipes } from '@/services/recipeService';
 
 const getTypeIcon = (type: IngredientType) => {
@@ -57,6 +58,7 @@ const FullRecipeForm: React.FC<FullRecipeFormProps> = ({ isOpen, initialData, in
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'edit' | 'calculation'>('edit');
 
   const [baseRecipeId, setBaseRecipeId] = useState<string>('');
   const [name, setName] = useState('');
@@ -115,6 +117,7 @@ const FullRecipeForm: React.FC<FullRecipeFormProps> = ({ isOpen, initialData, in
       setShowQuantityModal(false);
       setQuantityModalIngredient(null);
       setQuantityModalValue('');
+      setActiveTab('edit');
     }
   }, [initialData, isOpen]);
 
@@ -280,6 +283,31 @@ const FullRecipeForm: React.FC<FullRecipeFormProps> = ({ isOpen, initialData, in
     }, 300);
   };
 
+  const calculationResults = useMemo(() => {
+    if (recipeIngredients.length === 0 || !outputQuantity || outputQuantity <= 0) {
+      return null;
+    }
+    const productQty = outputQuantity;
+    const wasteMultiplier = 1 + (wasteRate / 100);
+    const requiredRecipeCount = (productQty * wasteMultiplier) / outputQuantity;
+    return calculateIngredientRequirements(recipeIngredients, ingredients, requiredRecipeCount);
+  }, [recipeIngredients, outputQuantity, wasteRate, ingredients]);
+
+  const allSufficient = useMemo(() => {
+    return checkAllIngredientsSufficient(calculationResults);
+  }, [calculationResults]);
+
+  const calculatedRecipeCount = useMemo(() => {
+    if (!outputQuantity || outputQuantity <= 0) {
+      return 0;
+    }
+    return calculateRequiredRecipeCount(outputQuantity, outputQuantity, wasteRate);
+  }, [outputQuantity, wasteRate]);
+
+  const maxPossibleCalculation = useMemo(() => {
+    return calculateMaxPossibleProductQuantity(recipeIngredients, ingredients, outputQuantity);
+  }, [recipeIngredients, outputQuantity, ingredients]);
+
   if (!isOpen) return null;
 
   return createPortal(
@@ -309,6 +337,39 @@ const FullRecipeForm: React.FC<FullRecipeFormProps> = ({ isOpen, initialData, in
             </button>
           </div>
 
+          <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+            <div className="flex gap-1 px-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setActiveTab('edit')}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'edit'
+                    ? 'border-orange-600 dark:border-orange-400 text-orange-600 dark:text-orange-400'
+                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Edit className="w-4 h-4" />
+                  <span>{t('recipes.form.tabEdit') || 'Chỉnh sửa'}</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('calculation')}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'calculation'
+                    ? 'border-orange-600 dark:border-orange-400 text-orange-600 dark:text-orange-400'
+                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Calculator className="w-4 h-4" />
+                  <span>{t('recipes.form.tabCalculation') || 'Tính toán'}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-4 sm:p-6 space-y-4 sm:space-y-5">
             {error && (
               <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2">
@@ -317,6 +378,7 @@ const FullRecipeForm: React.FC<FullRecipeFormProps> = ({ isOpen, initialData, in
               </div>
             )}
 
+            {activeTab === 'edit' ? (
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div className="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm space-y-3">
                 <div>
@@ -553,28 +615,205 @@ const FullRecipeForm: React.FC<FullRecipeFormProps> = ({ isOpen, initialData, in
                 </div>
               </div>
 
-              <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 active:bg-slate-100 dark:active:bg-slate-600 transition-colors disabled:opacity-50 touch-manipulation"
-                >
-                  {t('form.cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-orange-600 dark:bg-orange-500 rounded-lg text-sm font-medium text-white hover:bg-orange-700 dark:hover:bg-orange-600 active:bg-orange-800 dark:active:bg-orange-700 shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 transition-colors touch-manipulation"
-                >
-                  {isSubmitting ? t('form.saving') : (
-                    <>
-                      <Save className="w-4 h-4" /> {t('recipes.form.save')}
-                    </>
-                  )}
-                </button>
-              </div>
+              {activeTab === 'edit' && (
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 active:bg-slate-100 dark:active:bg-slate-600 transition-colors disabled:opacity-50 touch-manipulation"
+                  >
+                    {t('form.cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto px-6 py-2.5 bg-orange-600 dark:bg-orange-500 rounded-lg text-sm font-medium text-white hover:bg-orange-700 dark:hover:bg-orange-600 active:bg-orange-800 dark:active:bg-orange-700 shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 transition-colors touch-manipulation"
+                  >
+                    {isSubmitting ? t('form.saving') : (
+                      <>
+                        <Save className="w-4 h-4" /> {t('recipes.form.save')}
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </form>
+            ) : (
+              <div className="space-y-4 sm:space-y-5">
+                {outputQuantity > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-2 bg-blue-500/10 dark:bg-blue-400/20 rounded-lg">
+                          <Cake className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                          {t('recipes.form.outputQuantityOfRecipe') || 'Số lượng thành phẩm của công thức'}
+                        </span>
+                      </div>
+                      <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                        {outputQuantity.toLocaleString()}
+                      </p>
+                    </div>
+
+                    {wasteRate > 0 && (
+                      <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="p-2 bg-amber-500/10 dark:bg-amber-400/20 rounded-lg">
+                            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">
+                            {t('recipes.form.wasteRate') || 'Tỉ lệ hao hụt'}
+                          </span>
+                        </div>
+                        <p className="text-2xl font-bold text-amber-900 dark:text-amber-100">
+                          {wasteRate}%
+                        </p>
+                      </div>
+                    )}
+
+                    {maxPossibleCalculation.productQuantity > 0 && (
+                      <>
+                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="p-2 bg-slate-500/10 dark:bg-slate-400/20 rounded-lg">
+                              <Calculator className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                            </div>
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                              {t('recipes.form.maxPossibleRecipeCount') || 'Số lần có thể làm công thức'}
+                            </span>
+                          </div>
+                          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                            {maxPossibleCalculation.recipeCount}
+                          </p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20 p-4 rounded-xl border-2 border-orange-300 dark:border-orange-700 shadow-lg sm:col-span-2 lg:col-span-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="p-2 bg-orange-500/10 dark:bg-orange-400/20 rounded-lg">
+                              <CheckCircle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <span className="text-xs font-semibold text-orange-700 dark:text-orange-300 uppercase tracking-wide">
+                              {t('recipes.form.maxPossibleProductQuantity') || 'Số lượng thành phẩm có thể làm được'}
+                            </span>
+                          </div>
+                          <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                            {maxPossibleCalculation.productQuantity.toFixed(2)}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {!outputQuantity || outputQuantity <= 0 ? (
+                  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm text-center">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">
+                      {t('recipes.form.setOutputQuantityFirst') || 'Vui lòng nhập số lượng thành phẩm trong tab chỉnh sửa trước'}
+                    </p>
+                  </div>
+                ) : recipeIngredients.length === 0 ? (
+                  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm text-center">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">
+                      {t('recipes.form.noIngredientsForCalculation') || 'Vui lòng thêm nguyên liệu vào công thức trước khi tính toán'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className={`p-4 rounded-xl border-2 ${
+                      allSufficient
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        {allSufficient ? (
+                          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        )}
+                        <span className={`text-sm font-bold ${
+                          allSufficient
+                            ? 'text-green-700 dark:text-green-300'
+                            : 'text-red-700 dark:text-red-300'
+                        }`}>
+                          {allSufficient
+                            ? t('recipes.form.allIngredientsSufficient') || 'Tất cả nguyên liệu đủ'
+                            : t('recipes.form.someIngredientsInsufficient') || 'Một số nguyên liệu không đủ'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-slate-50 dark:bg-slate-700">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                                {t('recipes.form.ingredientName') || 'Nguyên liệu'}
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                                {t('recipes.form.required') || 'Cần'}
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                                {t('recipes.form.available') || 'Có'}
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                                {t('recipes.form.status') || 'Trạng thái'}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                            {calculationResults?.map((result) => {
+                              if (!result) return null;
+                              const { ingredient, recipeIngredient, required, available, sufficient, shortage } = result;
+                              const TypeIcon = getTypeIcon(ingredient.type);
+                              return (
+                                <tr key={ingredient.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className={`p-1.5 rounded-lg ${getTypeColors(ingredient.type).bg} ${getTypeColors(ingredient.type).border} border`}>
+                                        <TypeIcon className={`w-3.5 h-3.5 ${getTypeColors(ingredient.type).icon}`} />
+                                      </div>
+                                      <span className="text-sm font-medium text-slate-900 dark:text-white">
+                                        {ingredient.name}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="text-sm text-slate-900 dark:text-white font-medium">
+                                      {required.toLocaleString(undefined, { maximumFractionDigits: 2 })} {recipeIngredient.unit === 'piece' ? t('ingredients.form.unitPiece') : 'g'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className="text-sm text-slate-900 dark:text-white">
+                                      {available.toLocaleString()} {ingredient.unit === 'piece' ? t('ingredients.form.unitPiece') : 'g'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {sufficient ? (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md text-xs font-semibold">
+                                        <CheckCircle className="w-3 h-3" />
+                                        {t('recipes.form.sufficient') || 'Đủ'}
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md text-xs font-semibold">
+                                        <XCircle className="w-3 h-3" />
+                                        {t('recipes.form.shortage') || 'Thiếu'} {shortage.toLocaleString(undefined, { maximumFractionDigits: 2 })} {ingredient.unit === 'piece' ? t('ingredients.form.unitPiece') : 'g'}
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

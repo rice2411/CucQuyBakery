@@ -2,6 +2,7 @@ import React from 'react';
 import { BookOpen, Loader2, ChefHat, List, Trash2, Layers, Cake } from 'lucide-react';
 import { Recipe } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { calculateFinalQuantity } from '@/utils/recipeUtil';
 
 interface RecipeGridProps {
   recipes: Recipe[];
@@ -67,7 +68,7 @@ const RecipeGrid: React.FC<RecipeGridProps> = ({ recipes, loading, onEdit, onCre
         const typeInfo = getRecipeTypeInfo(recipe);
         const TypeIcon = typeInfo.icon;
         const finalQuantity = recipe.outputQuantity && recipe.wasteRate !== undefined
-          ? Math.round(recipe.outputQuantity * (1 - recipe.wasteRate / 100) * 100) / 100
+          ? calculateFinalQuantity(recipe.outputQuantity, recipe.wasteRate)
           : null;
 
         return (
@@ -130,15 +131,7 @@ const RecipeGrid: React.FC<RecipeGridProps> = ({ recipes, loading, onEdit, onCre
                 <>
                   <span>•</span>
                   <span className="font-semibold text-orange-600 dark:text-orange-400">
-                    {finalQuantity.toLocaleString()} {t('recipes.form.calculatedFinalQuantity')}
-                  </span>
-                </>
-              )}
-              {recipe.yield && recipe.yield > 0 && (
-                <>
-                  <span>•</span>
-                  <span>
-                    {recipe.yield} {recipe.yieldUnit || t('recipes.servings')}
+                   {t('recipes.form.calculatedFinalQuantity')}  {finalQuantity.toLocaleString()}
                   </span>
                 </>
               )}
