@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, PlusCircle, ShoppingCart, Users } from 'lucide-react';
+import { LayoutDashboard, Package, PlusCircle, ShoppingCart, Users, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAccessibleRoutes } from '@/config/routes';
@@ -12,6 +12,7 @@ const MobileFooterNav: React.FC = () => {
   const navigate = useNavigate();
   const { userData } = useAuth();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const storedUser = React.useMemo(() => getUserFromLocalStorage(), []);
@@ -22,6 +23,9 @@ const MobileFooterNav: React.FC = () => {
   const otherRoutes = accessibleRoutes.filter(
     (route) => !mainTabs.includes(route.path) && route.path !== '/' && !route.disabled
   );
+
+  const isMoreActive = otherRoutes.some((route) => route.path === location.pathname);
+  const activeMoreRoute = otherRoutes.find((route) => route.path === location.pathname);
 
   const tabs = [
     {
@@ -52,28 +56,43 @@ const MobileFooterNav: React.FC = () => {
   ];
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isMoreMenuOpen) {
         setIsMoreMenuOpen(false);
       }
     };
 
     if (isMoreMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
     };
   }, [isMoreMenuOpen]);
 
   const handleMoreClick = () => {
-    setIsMoreMenuOpen(!isMoreMenuOpen);
+    if (isMoreMenuOpen) {
+      handleCloseMenu();
+    } else {
+      setIsMoreMenuOpen(true);
+      setIsClosing(false);
+    }
+  };
+
+  const handleCloseMenu = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsMoreMenuOpen(false);
+      setIsClosing(false);
+    }, 300);
   };
 
   const handleRouteClick = (path: string) => {
     navigate(path);
-    setIsMoreMenuOpen(false);
+    handleCloseMenu();
   };
 
   return (
@@ -110,15 +129,20 @@ const MobileFooterNav: React.FC = () => {
               );
             }
 
+            const displayLabel = isMore && isMoreActive && activeMoreRoute
+              ? t(activeMoreRoute.labelKey)
+              : tab.label;
+
             return (
               <button
                 key={tab.id}
                 onClick={isMore ? handleMoreClick : () => navigate(tab.id)}
-                className="flex flex-1 flex-col items-center gap-0.5 text-[11px]"
+                className="flex flex-1 flex-col items-center gap-0.5 text-[11px] min-w-0"
+                title={displayLabel}
               >
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                    isMore && isMoreMenuOpen
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
+                    isMore && (isMoreMenuOpen || isMoreActive)
                       ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-300'
                       : active
                         ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-300'
@@ -128,15 +152,15 @@ const MobileFooterNav: React.FC = () => {
                   <Icon className="w-5 h-5" />
                 </div>
                 <span
-                  className={`mt-0.5 ${
-                    isMore && isMoreMenuOpen
+                  className={`mt-0.5 w-full text-center truncate px-0.5 ${
+                    isMore && (isMoreMenuOpen || isMoreActive)
                       ? 'text-orange-600 dark:text-orange-300 font-semibold'
                       : active
                         ? 'text-orange-600 dark:text-orange-300 font-semibold'
                         : 'text-slate-500 dark:text-slate-300'
                   }`}
                 >
-                  {tab.label}
+                  {displayLabel}
                 </span>
               </button>
             );
@@ -144,36 +168,65 @@ const MobileFooterNav: React.FC = () => {
         </div>
       </nav>
 
-      {isMoreMenuOpen && otherRoutes.length > 0 && (
-        <div
-          ref={menuRef}
-          className="md:hidden fixed bottom-20 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-40 shadow-2xl animate-in slide-in-from-bottom-4"
-        >
-          <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
-            {otherRoutes.map((route) => {
-              const Icon = route.icon;
-              const active = location.pathname === route.path;
-              return (
-                <button
-                  key={route.path}
-                  onClick={() => handleRouteClick(route.path)}
-                  className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                    active
-                      ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <Icon
-                    className={`w-5 h-5 mr-3 ${
-                      active ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500'
-                    }`}
-                  />
-                  {t(route.labelKey)}
-                </button>
-              );
-            })}
+      {isMoreMenuOpen && (
+        <>
+          <div
+            className={`md:hidden fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 ${
+              isClosing ? 'opacity-0' : 'opacity-100'
+            }`}
+            onClick={handleCloseMenu}
+          />
+          <div
+            ref={menuRef}
+            className={`md:hidden fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-slate-800 z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+              isClosing ? 'translate-x-full' : 'translate-x-0'
+            }`}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                {t('nav.add')}
+              </h2>
+              <button
+                onClick={handleCloseMenu}
+                className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {otherRoutes.length > 0 ? (
+                <div className="space-y-1">
+                  {otherRoutes.map((route) => {
+                    const Icon = route.icon;
+                    const active = location.pathname === route.path;
+                    return (
+                      <button
+                        key={route.path}
+                        onClick={() => handleRouteClick(route.path)}
+                        className={`w-full flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                          active
+                            ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400'
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        <Icon
+                          className={`w-5 h-5 mr-3 ${
+                            active ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500'
+                          }`}
+                        />
+                        {t(route.labelKey)}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  <p className="text-sm">{t('nav.noMorePages') || 'No additional pages available'}</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );
