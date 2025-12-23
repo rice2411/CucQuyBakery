@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { Box, FlaskConical, Sparkles, Package, Loader2, Warehouse, ArrowDownCircle, ArrowUpCircle, TrendingUp } from 'lucide-react';
+import { Box, FlaskConical, Sparkles, Package, Loader2, Warehouse, ArrowDownCircle, TrendingUp } from 'lucide-react';
 import { Ingredient, IngredientType } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { calculateTotalImportQuantity, calculateTotalUsageQuantity, calculateCurrentQuantity, isLowStock, isOutOfStock } from '@/utils/ingredientUtil';
+import { calculateTotalImportQuantity, calculateCurrentQuantity, isLowStock, isOutOfStock } from '@/utils/ingredientUtil';
 
 interface IngredientGridProps {
   ingredients: Ingredient[];
@@ -247,19 +247,6 @@ const IngredientGrid: React.FC<IngredientGridProps> = ({ ingredients, loading, o
                           </div>
                           <p className="text-xs font-bold text-green-700 dark:text-green-300 leading-none">
                             {calculateTotalImportQuantity(ing)}
-                          </p>
-                        </div>
-
-                        {/* Usage */}
-                        <div className="flex-1 bg-red-50 dark:bg-red-900/20 rounded-md p-1.5 border border-red-200 dark:border-red-800">
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <ArrowUpCircle className="w-2.5 h-2.5 text-red-600 dark:text-red-400" />
-                            <span className="text-[9px] font-semibold text-red-700 dark:text-red-300 uppercase">
-                              {t('ingredients.totalUsage')}
-                            </span>
-                          </div>
-                          <p className="text-xs font-bold text-red-700 dark:text-red-300 leading-none">
-                            {calculateTotalUsageQuantity(ing)}
                           </p>
                         </div>
                       </div>

@@ -26,12 +26,8 @@ export const calculateTotalUsageQuantity = (ingredient: Ingredient): number => {
   if (!ingredient.history || ingredient.history.length === 0) {
     return 0;
   }
-  return ingredient.history.reduce((acc, item) => {
-    if (item.type === IngredientHistoryType.USAGE) {
-      return acc + item.importQuantity;
-    }
-    return acc;
-  }, 0);
+  // Usage history has been removed; keep function for compatibility
+  return 0;
 };
 
 /**
@@ -42,8 +38,7 @@ export const calculateTotalUsageQuantity = (ingredient: Ingredient): number => {
 export const calculateCurrentQuantity = (ingredient: Ingredient): number => {
   const initialQty = ingredient.initialQuantity ?? 0;
   const totalImport = calculateTotalImportQuantity(ingredient);
-  const totalUsage = calculateTotalUsageQuantity(ingredient);
-  return initialQty + totalImport - totalUsage;
+  return initialQty + totalImport;
 };
 
 /**

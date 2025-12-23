@@ -15,6 +15,7 @@ export interface IngredientHistory {
   type: IngredientHistoryType;
   fromQuantity: number;
   importQuantity: number;
+  productWeight?: number;
   unit: 'g' | 'piece';
   note?: string;
   supplierId?: string;

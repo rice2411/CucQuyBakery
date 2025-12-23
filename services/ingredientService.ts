@@ -53,6 +53,7 @@ export const fetchIngredients = async (): Promise<Ingredient[]> => {
             type: normalizeHistoryType(item.type),
             fromQuantity: Number(item.fromQuantity ?? 0),
             importQuantity: Number(item.importQuantity ?? item.toQuantity ?? item.quantity ?? 0),
+            productWeight: Number(item.productWeight ?? 0),
             unit: item.unit === 'piece' ? 'piece' : 'g',
             note: item.note || '',
             price: Number(item.price || 0),
@@ -87,12 +88,29 @@ export const fetchIngredients = async (): Promise<Ingredient[]> => {
 export const addIngredient = async (ingredientData: Omit<Ingredient, 'id'>): Promise<void> => {
   try {
     const ref = collection(db, 'ingredients');
+    const cleanHistory = (ingredientData.history || []).map((item: any) => {
+      const cleanItem: any = {
+        id: item.id,
+        type: item.type,
+        fromQuantity: item.fromQuantity,
+        importQuantity: item.importQuantity,
+        unit: item.unit,
+        createdAt: item.createdAt,
+      };
+      if (item.type === IngredientHistoryType.IMPORT) {
+        if (item.price !== undefined && item.price !== null) cleanItem.price = item.price;
+        if (item.note) cleanItem.note = item.note;
+        if (item.supplierId) cleanItem.supplierId = item.supplierId;
+        if (item.supplierName) cleanItem.supplierName = item.supplierName;
+      }
+      return cleanItem;
+    });
     await addDoc(ref, {
       name: ingredientData.name.trim(),
       type: ingredientData.type,
       initialQuantity: ingredientData.initialQuantity || 0,
       unit: ingredientData.unit || 'g',
-      history: ingredientData.history || [],
+      history: cleanHistory,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
@@ -105,11 +123,38 @@ export const addIngredient = async (ingredientData: Omit<Ingredient, 'id'>): Pro
 export const updateIngredient = async (id: string, ingredientData: Partial<Ingredient>): Promise<void> => {
   try {
     const ref = doc(db, 'ingredients', id);
-    const payload = {
-      ...ingredientData,
+    const payload: any = {
       updatedAt: Timestamp.now(),
     };
-    await updateDoc(ref, payload as any);
+    
+    Object.keys(ingredientData).forEach((key) => {
+      const value = (ingredientData as any)[key];
+      if (value !== undefined && value !== null) {
+        if (key === 'history' && Array.isArray(value)) {
+          payload[key] = value.map((item: any) => {
+            const cleanItem: any = {
+              id: item.id,
+              type: item.type,
+              fromQuantity: item.fromQuantity,
+              importQuantity: item.importQuantity,
+              unit: item.unit,
+              createdAt: item.createdAt,
+            };
+            if (item.type === IngredientHistoryType.IMPORT) {
+              if (item.price !== undefined) cleanItem.price = item.price;
+              if (item.note) cleanItem.note = item.note;
+              if (item.supplierId) cleanItem.supplierId = item.supplierId;
+              if (item.supplierName) cleanItem.supplierName = item.supplierName;
+            }
+            return cleanItem;
+          });
+        } else {
+          payload[key] = value;
+        }
+      }
+    });
+    
+    await updateDoc(ref, payload);
   } catch (error) {
     console.error('Error updating ingredient:', error);
     throw error;
