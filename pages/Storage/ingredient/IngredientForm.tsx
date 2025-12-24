@@ -106,9 +106,12 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
       const dateMatch = new Date(item.createdAt).toLocaleDateString('vi-VN').includes(searchLower);
       const quantityMatch = item.importQuantity.toString().includes(searchLower);
       const priceMatch = item.price?.toString().includes(searchLower);
+      const productWeightMatch = item.productWeight?.toString().includes(searchLower);
       const totalAmount = item.price && item.importQuantity ? item.price * item.importQuantity : 0;
       const totalAmountMatch = totalAmount > 0 ? totalAmount.toString().includes(searchLower.replace(/[^\d]/g, '')) : false;
-      return supplierMatch || noteMatch || dateMatch || quantityMatch || priceMatch || totalAmountMatch;
+      const totalWeight = item.productWeight && item.importQuantity ? item.productWeight * item.importQuantity : 0;
+      const totalWeightMatch = totalWeight > 0 ? totalWeight.toString().includes(searchLower.replace(/[^\d]/g, '')) : false;
+      return supplierMatch || noteMatch || dateMatch || quantityMatch || priceMatch || productWeightMatch || totalAmountMatch || totalWeightMatch;
     });
   }, [sortedHistory, historySearch]);
 
@@ -295,7 +298,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
               type: IngredientHistoryType.IMPORT,
               fromQuantity: current,
               importQuantity: historyImportQuantity,
-              productWeight: unit === 'piece' ? productWeight : undefined,
+              productWeight: productWeight > 0 ? productWeight : undefined,
               createdAt: new Date(historyDate || Date.now()).toISOString(),
             };
             updatedItem.price = historyPrice || 0;
@@ -318,7 +321,7 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
           type: IngredientHistoryType.IMPORT,
           fromQuantity: fromQty,
           importQuantity: historyImportQuantity,
-          productWeight: unit === 'piece' ? productWeight : undefined,
+          productWeight: productWeight > 0 ? productWeight : undefined,
           unit,
           createdAt: new Date(historyDate || Date.now()).toISOString(),
         };
@@ -338,11 +341,13 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
       setHistorySupplierId('');
       setHistorySupplierInput('');
       setHistoryDate(new Date().toISOString().slice(0, 10));
+      setError(null);
 
       await onSave({
         ...initialData,
         initialQuantity,
         history: newHistory,
+        _isHistoryUpdate: true,
       });
     } catch (err: any) {
       setError(err.message || t('ingredients.form.errors.saveFailed'));
@@ -837,26 +842,31 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
                                 </span>
                               </div>
 
-                              {/* Quantity Change - Highlighted */}
-                              <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
-                                <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                                  {t('ingredients.form.quantity')}:
-                                </span>
-                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                  <p className={`text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300`}>
-                                    {item.fromQuantity} {formatUnit(item.unit)}
-                                  </p>
-                                  <span className={`text-base sm:text-lg font-bold ${isImport ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    {isImport ? '+' : '-'}
+                              {/* Product Weight - if available */}
+                              {item.productWeight && item.productWeight > 0 && (
+                                <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 px-2 sm:px-3 py-2 rounded-lg">
+                                  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                    {t('ingredients.form.productWeight')}:
                                   </span>
-                                  <p className={`text-sm sm:text-lg font-bold ${textColor}`}>
-                                    {item.importQuantity} {formatUnit(item.unit)}
-                                  </p>
-                                  <span className="text-slate-400 dark:text-slate-500">=</span>
-                                  <p className={`text-sm sm:text-lg font-bold ${isImport ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    {isImport ? item.fromQuantity + item.importQuantity : item.fromQuantity - item.importQuantity} {formatUnit(item.unit)}
+                                  <p className="text-sm sm:text-base font-bold text-orange-600 dark:text-orange-400">
+                                    {item.productWeight}g/{formatUnit(item.unit)}
+                                    {item.importQuantity > 0 && (
+                                      <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                                        (× {item.importQuantity} = {(item.productWeight * item.importQuantity).toLocaleString('vi-VN')}g)
+                                      </span>
+                                    )}
                                   </p>
                                 </div>
+                              )}
+
+                              {/* Import Quantity - Simple display */}
+                              <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-2 sm:px-3 py-2 rounded-lg">
+                                <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                  {t('ingredients.form.importQuantity')}:
+                                </span>
+                                <p className={`text-sm sm:text-base font-bold ${textColor}`}>
+                                  {item.importQuantity}
+                                </p>
                               </div>
 
                               {/* Price and Total Amount - Highlighted */}
@@ -889,11 +899,29 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
                                 )}
                               </div>
 
-                              {/* Before/After Quantity - Highlighted */}
-                              {totals && (
+                              {/* Weight Before/After - Highlighted */}
+                              {item.productWeight && item.productWeight > 0 && totals && (
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 px-2 sm:px-3 py-2 rounded-lg">
+                                  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                    {t('ingredients.form.totalWeight')} {t('ingredients.form.historyQuantityBefore') || '(Trước / sau)'}:
+                                  </span>
+                                  <div className="flex items-center gap-1.5 sm:gap-2">
+                                    <span className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300">
+                                      {(totals.before * item.productWeight).toLocaleString('vi-VN')}g
+                                    </span>
+                                    <span className="text-slate-400 dark:text-slate-500">→</span>
+                                    <span className="text-xs sm:text-sm font-bold text-purple-600 dark:text-purple-400">
+                                      {(totals.after * item.productWeight).toLocaleString('vi-VN')}g
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Quantity Before/After - Only if no productWeight */}
+                              {(!item.productWeight || item.productWeight <= 0) && totals && (
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 bg-white/60 dark:bg-slate-800/60 px-2 sm:px-3 py-2 rounded-lg">
                                   <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
-                                    {t('ingredients.form.historyQuantityBefore') || 'Số lượng'}:
+                                    {t('ingredients.form.historyQuantityBefore') || 'Số lượng (Trước / sau)'}:
                                   </span>
                                   <div className="flex items-center gap-1.5 sm:gap-2">
                                     <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -962,17 +990,19 @@ const IngredientForm: React.FC<IngredientFormProps> = ({ isOpen, initialData, on
             >
               {t('form.cancel')}
             </button>
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="w-full sm:w-auto px-6 py-3 sm:py-2 bg-orange-600 dark:bg-orange-500 rounded-lg text-base sm:text-sm font-medium text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 transition-colors touch-manipulation"
-            >
-              {isSubmitting ? t('form.saving') : (
-                <>
-                  <Save className="w-5 h-5 sm:w-4 sm:h-4" /> {t('ingredients.form.save')}
-                </>
-              )}
-            </button>
+            {activeTab === 'details' && (
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto px-6 py-3 sm:py-2 bg-orange-600 dark:bg-orange-500 rounded-lg text-base sm:text-sm font-medium text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 transition-colors touch-manipulation"
+              >
+                {isSubmitting ? t('form.saving') : (
+                  <>
+                    <Save className="w-5 h-5 sm:w-4 sm:h-4" /> {t('ingredients.form.save')}
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

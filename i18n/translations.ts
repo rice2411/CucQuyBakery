@@ -2,7 +2,8 @@ export const translations = {
   en: {
     common: {
       apply: "Apply",
-      cancel: "Cancel"
+      cancel: "Cancel",
+      reset: "Reset"
     },
     nav: {
       dashboard: "Dashboard",
@@ -213,7 +214,6 @@ export const translations = {
         fromQuantity: "From quantity",
         fromQuantityPlaceholder: "e.g. 0",
         importQuantity: "Import quantity",
-        importQuantityPlaceholder: "e.g. 500",
         usageQuantity: "Usage quantity",
         usageQuantityPlaceholder: "e.g. 100",
         unit: "Unit",
@@ -581,7 +581,8 @@ export const translations = {
   vi: {
     common: {
       apply: "Áp dụng",
-      cancel: "Hủy"
+      cancel: "Hủy",
+      reset: "Đặt lại"
     },
     nav: {
       dashboard: "Tổng quan",
@@ -792,7 +793,6 @@ export const translations = {
         fromQuantity: "Số lượng từ",
         fromQuantityPlaceholder: "VD: 0",
         importQuantity: "Số lượng nhập",
-        importQuantityPlaceholder: "VD: 500",
         usageQuantity: "Số lượng sử dụng",
         usageQuantityPlaceholder: "VD: 100",
         unit: "Đơn vị",

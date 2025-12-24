@@ -108,15 +108,18 @@ const InventoryPage: React.FC = () => {
   };
 
   const handleSaveIngredient = async (data: any) => {
-    if (data.id) {
-      await updateIngredient(data.id, data);
+    const { _isHistoryUpdate, ...cleanData } = data;
+    if (cleanData.id) {
+      await updateIngredient(cleanData.id, cleanData);
     } else {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, ...payload } = data;
+      const { id, ...payload } = cleanData;
       await addIngredient(payload);
     }
     await loadIngredients();
-    setIsIngredientFormOpen(false);
+    if (!_isHistoryUpdate) {
+      setIsIngredientFormOpen(false);
+    }
   };
 
   const filteredProducts = useMemo(() => {

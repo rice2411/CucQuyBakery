@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, SlidersHorizontal, Calendar, Search, Package } from 'lucide-react';
+import { X, SlidersHorizontal, Calendar, Search, Package, RotateCcw } from 'lucide-react';
 import { OrderStatus, PaymentStatus } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -78,6 +78,22 @@ const OrderFiltersModal: React.FC<OrderFiltersModalProps> = ({ isOpen, initialVa
 
   const handleApply = () => {
     onApply(values);
+  };
+
+  const handleReset = () => {
+    const defaultValues: OrderFiltersState = {
+      searchTerm: '',
+      statusFilter: 'All',
+      productFilter: '',
+      selectedMonth: '',
+      paymentStatusFilter: 'All',
+      paymentMethodFilter: 'All',
+      dateFrom: '',
+      dateTo: '',
+      dateType: 'orderDate',
+    };
+    setValues(defaultValues);
+    onApply(defaultValues);
   };
 
   if (!isOpen) return null;
@@ -252,19 +268,28 @@ const OrderFiltersModal: React.FC<OrderFiltersModalProps> = ({ isOpen, initialVa
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-5 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <div className="flex justify-between gap-3 px-5 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
           <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            onClick={handleReset}
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
           >
-            {t('common.cancel') ?? 'Cancel'}
+            <RotateCcw className="w-4 h-4" />
+            {t('common.reset') ?? 'Reset'}
           </button>
-          <button
-            onClick={handleApply}
-            className="px-4 py-2 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg shadow-sm transition-colors"
-          >
-            {t('common.apply') ?? 'Apply'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              {t('common.cancel') ?? 'Cancel'}
+            </button>
+            <button
+              onClick={handleApply}
+              className="px-4 py-2 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg shadow-sm transition-colors"
+            >
+              {t('common.apply') ?? 'Apply'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

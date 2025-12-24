@@ -102,6 +102,7 @@ export const addIngredient = async (ingredientData: Omit<Ingredient, 'id'>): Pro
         if (item.note) cleanItem.note = item.note;
         if (item.supplierId) cleanItem.supplierId = item.supplierId;
         if (item.supplierName) cleanItem.supplierName = item.supplierName;
+        if (item.productWeight !== undefined && item.productWeight !== null) cleanItem.productWeight = item.productWeight;
       }
       return cleanItem;
     });
@@ -145,6 +146,7 @@ export const updateIngredient = async (id: string, ingredientData: Partial<Ingre
               if (item.note) cleanItem.note = item.note;
               if (item.supplierId) cleanItem.supplierId = item.supplierId;
               if (item.supplierName) cleanItem.supplierName = item.supplierName;
+              if (item.productWeight !== undefined && item.productWeight !== null) cleanItem.productWeight = item.productWeight;
             }
             return cleanItem;
           });
