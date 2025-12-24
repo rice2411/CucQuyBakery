@@ -9,6 +9,8 @@ import { fetchProducts } from '@/services/productService';
 import OrderFormCustomerSection from './OrderFormCustomerSection';
 import OrderFormItemsSection from './OrderFormItemsSection';
 import OrderFormStatusSection from './OrderFormStatusSection';
+import CreateCustomerModal from './CreateCustomerModal';
+import { useCustomers } from '@/contexts/CustomerContext';
 
 interface OrderFormProps {
   initialData?: Order | null;
@@ -26,9 +28,12 @@ export interface FormItem {
 const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
+  const { customers, createNewCustomer } = useCustomers();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isClosing, setIsClosing] = useState(false);
+  const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
+  const [pendingOrderData, setPendingOrderData] = useState<any>(null);
 
   const [orderNumber, setOrderNumber] = useState('');
   const [loadingOrderNumber, setLoadingOrderNumber] = useState(false);
@@ -198,10 +203,45 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
     }, 280);
   };
 
+  const normalizePhone = (phoneStr: string) => phoneStr.replace(/[^0-9]/g, '').toLowerCase();
+
+  const checkCustomerExists = (phoneNumber: string): boolean => {
+    if (!phoneNumber.trim()) return false;
+    const normalizedPhone = normalizePhone(phoneNumber);
+    return customers.some(c => normalizePhone(c.phone || '') === normalizedPhone);
+  };
+
+  const handleCreateCustomer = async (name: string, phoneNumber: string) => {
+    try {
+      await createNewCustomer({
+        name,
+        phone: phoneNumber,
+      });
+      setShowCreateCustomerModal(false);
+      
+      if (pendingOrderData) {
+        await submitOrderData(pendingOrderData);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Không thể tạo khách hàng');
+      setShowCreateCustomerModal(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  const submitOrderData = async (formData: any) => {
+    setIsSubmitting(true);
+    try {
+      await onSave(formData);
+    } catch (err: any) {
+      setError(err.message || "Failed to save order");
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsSubmitting(true);
 
     try {
       if (!customerName.trim()) {
@@ -211,7 +251,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
       if (items.length === 0) {
         throw new Error("At least one product is required");
       }
-      // Prepare items payload
+
       const finalItems = items.map(item => {
          const finalProductName = item.productName?.trim();
          if (!finalProductName) throw new Error("Product name is required for all items");
@@ -228,7 +268,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
 
       const formData = {
         id: initialData?.id,
-        orderNumber: orderNumber, // Pass the calculated order number
+        orderNumber: orderNumber,
         customer: {
           name: customerName,
           phone: phone,
@@ -243,10 +283,16 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
         status: status,
         paymentStatus: paymentStatus,
         paymentMethod: paymentMethod,
-        createdBy: currentUser.uid // Thêm thông tin người tạo
+        createdBy: currentUser.uid
       };
 
-      await onSave(formData);
+      if (phone.trim() && !checkCustomerExists(phone)) {
+        setPendingOrderData(formData);
+        setShowCreateCustomerModal(true);
+        return;
+      }
+
+      await submitOrderData(formData);
     } catch (err: any) {
       setError(err.message || "Failed to save order");
       setIsSubmitting(false);
@@ -390,6 +436,18 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
           </div>
         </div>
       </div>
+
+      <CreateCustomerModal
+        isOpen={showCreateCustomerModal}
+        onClose={() => {
+          setShowCreateCustomerModal(false);
+          setPendingOrderData(null);
+          setIsSubmitting(false);
+        }}
+        onSave={handleCreateCustomer}
+        phone={phone}
+        customerName={customerName}
+      />
     </div>
   );
 };
