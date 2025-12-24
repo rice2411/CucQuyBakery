@@ -6,11 +6,13 @@ import { formatVND } from '@/utils/currencyUtil';
 interface TransactionsDesktopTableProps {
   transactions: Transaction[];
   formatDate: (dateStr: string) => string;
+  onTransactionClick?: (transaction: Transaction) => void;
 }
 
 const TransactionsDesktopTable: React.FC<TransactionsDesktopTableProps> = ({
   transactions,
   formatDate,
+  onTransactionClick,
 }) => {
   if (!transactions.length) {
     return null;
@@ -35,7 +37,8 @@ const TransactionsDesktopTable: React.FC<TransactionsDesktopTableProps> = ({
             {transactions.map((tr) => (
               <tr
                 key={tr.id}
-                className="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors group"
+                onClick={() => onTransactionClick?.(tr)}
+                className="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors group cursor-pointer"
               >
                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
@@ -72,14 +75,6 @@ const TransactionsDesktopTable: React.FC<TransactionsDesktopTableProps> = ({
                     >
                       {tr.content || '-'}
                     </p>
-                    {tr.description && (
-                      <p
-                        className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5"
-                        title={tr.description}
-                      >
-                        {tr.description}
-                      </p>
-                    )}
                   </div>
                 </td>
                 <td className="px-4 sm:px-6 py-4">

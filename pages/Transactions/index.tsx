@@ -6,6 +6,7 @@ import { Transaction } from '@/types';
 import toast from 'react-hot-toast';
 import TransactionsDesktopTable from './components/desktop/TransactionsDesktopTable';
 import TransactionsMobileList from './components/mobile/TransactionsMobileList';
+import TransactionDetailModal from './components/TransactionDetailModal';
 
 const TransactionsPage: React.FC = () => {
   const { t } = useLanguage();
@@ -15,6 +16,8 @@ const TransactionsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -166,10 +169,34 @@ const TransactionsPage: React.FC = () => {
          </div>
       ) : (
         <>
-          <TransactionsMobileList transactions={filteredTransactions} formatDate={formatDate} />
-          <TransactionsDesktopTable transactions={filteredTransactions} formatDate={formatDate} />
+          <TransactionsMobileList 
+            transactions={filteredTransactions} 
+            formatDate={formatDate}
+            onTransactionClick={(tr) => {
+              setSelectedTransaction(tr);
+              setIsDetailModalOpen(true);
+            }}
+          />
+          <TransactionsDesktopTable 
+            transactions={filteredTransactions} 
+            formatDate={formatDate}
+            onTransactionClick={(tr) => {
+              setSelectedTransaction(tr);
+              setIsDetailModalOpen(true);
+            }}
+          />
         </>
       )}
+
+      <TransactionDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedTransaction(null);
+        }}
+        transaction={selectedTransaction}
+        formatDate={formatDate}
+      />
     </div>
   );
 };

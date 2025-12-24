@@ -6,11 +6,13 @@ import { formatVND } from '@/utils/currencyUtil';
 interface TransactionsMobileListProps {
   transactions: Transaction[];
   formatDate: (dateStr: string) => string;
+  onTransactionClick?: (transaction: Transaction) => void;
 }
 
 const TransactionsMobileList: React.FC<TransactionsMobileListProps> = ({
   transactions,
   formatDate,
+  onTransactionClick,
 }) => {
   if (!transactions.length) {
     return null;
@@ -21,7 +23,8 @@ const TransactionsMobileList: React.FC<TransactionsMobileListProps> = ({
       {transactions.map((tr) => (
         <div
           key={tr.id}
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-sm mx-[-0.25rem] sm:mx-0"
+          onClick={() => onTransactionClick?.(tr)}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 shadow-sm mx-[-0.25rem] sm:mx-0 cursor-pointer hover:shadow-md hover:border-orange-300 dark:hover:border-orange-600 transition-all"
         >
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
@@ -71,14 +74,9 @@ const TransactionsMobileList: React.FC<TransactionsMobileListProps> = ({
           </div>
 
           <div className="mb-2">
-            <p className="text-xs text-slate-700 dark:text-slate-200 line-clamp-2">
+            <p className="text-xs text-slate-700 dark:text-slate-200 line-clamp-1">
               {tr.content || '-'}
             </p>
-            {tr.description && (
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
-                {tr.description}
-              </p>
-            )}
           </div>
 
           <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-700">
