@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle, Hash, Loader2, Calendar, Clock } from 'lucide-react';
+import { Save, AlertCircle, Hash, Loader2, Calendar, Clock } from 'lucide-react';
 import { Order, OrderStatus, PaymentStatus, PaymentMethod, Product } from '@/types/index';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserByUid } from '@/services/userService';
 import { getNextOrderNumber } from '@/services/orderService';
 import { fetchProducts } from '@/services/productService';
-import OrderFormCustomerSection from './OrderFormCustomerSection';
-import OrderFormItemsSection from './OrderFormItemsSection';
-import OrderFormStatusSection from './OrderFormStatusSection';
+import OrderFormCustomerSection from '../OrderFormCustomerSection';
+import OrderFormItemsSection from '../OrderFormItemsSection';
+import OrderFormStatusSection from '../OrderFormStatusSection';
 import CreateCustomerModal from './CreateCustomerModal';
 import { useCustomers } from '@/contexts/CustomerContext';
+import BaseSlidePanel from '@/components/BaseSlidePanel';
 
 interface OrderFormProps {
+  isOpen: boolean;
   initialData?: Order | null;
   onSave: (data: any) => Promise<void>;
   onCancel: () => void;
@@ -25,13 +27,12 @@ export interface FormItem {
   quantity: number;
   unitPrice: number;
 }
-const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) => {
+const OrderForm: React.FC<OrderFormProps> = ({ isOpen, initialData, onSave, onCancel }) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
   const { customers, createNewCustomer } = useCustomers();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isClosing, setIsClosing] = useState(false);
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
   const [pendingOrderData, setPendingOrderData] = useState<any>(null);
 
@@ -196,12 +197,6 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
 
   const total = calculateTotal();
 
-  const handleCancel = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onCancel();
-    }, 280);
-  };
 
   const normalizePhone = (phoneStr: string) => phoneStr.replace(/[^0-9]/g, '').toLowerCase();
 
@@ -299,23 +294,40 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
     }
   };
 
+  const footer = (
+    <div className="flex justify-end gap-3">
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={isSubmitting}
+        className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+      >
+        {t('form.cancel')}
+      </button>
+      <button
+        onClick={handleSubmit}
+        disabled={isSubmitting || loadingOrderNumber}
+        className="px-6 py-2 bg-orange-600 dark:bg-orange-500 rounded-lg text-sm font-medium text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-sm flex items-center gap-2 disabled:opacity-70 transition-colors"
+      >
+        {isSubmitting ? t('form.saving') : (
+          <>
+            <Save className="w-4 h-4" /> {t('form.save')}
+          </>
+        )}
+      </button>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true">
-      <div 
-        className={`absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${isClosing ? 'opacity-0' : 'opacity-100'}`} 
-        onClick={handleCancel}
-      ></div>
-      <div className="absolute inset-y-0 right-0 max-w-xl w-full flex pointer-events-none">
-        <div className={`w-full h-full bg-white dark:bg-slate-800 shadow-2xl flex flex-col pointer-events-auto transition-colors duration-200 ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-800">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              {initialData ? t('form.editTitle') : t('form.createTitle')}
-            </h2>
-            <button onClick={handleCancel} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-400 transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+    <>
+      <BaseSlidePanel
+        isOpen={isOpen}
+        onClose={onCancel}
+        title={initialData ? t('form.editTitle') : t('form.createTitle')}
+        maxWidth="xl"
+        footer={footer}
+      >
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {error && (
               <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" />
@@ -412,30 +424,8 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
               customerName={customerName}
               orderNumber={orderNumber}
             />
-          </form>
-          <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex justify-end gap-3">
-            <button 
-              type="button" 
-              onClick={handleCancel}
-              disabled={isSubmitting}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-            >
-              {t('form.cancel')}
-            </button>
-            <button 
-              onClick={handleSubmit}
-              disabled={isSubmitting || loadingOrderNumber}
-              className="px-6 py-2 bg-orange-600 dark:bg-orange-500 rounded-lg text-sm font-medium text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-sm flex items-center gap-2 disabled:opacity-70 transition-colors"
-            >
-              {isSubmitting ? t('form.saving') : (
-                <>
-                  <Save className="w-4 h-4" /> {t('form.save')}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+        </form>
+      </BaseSlidePanel>
 
       <CreateCustomerModal
         isOpen={showCreateCustomerModal}
@@ -448,7 +438,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ initialData, onSave, onCancel }) 
         phone={phone}
         customerName={customerName}
       />
-    </div>
+    </>
   );
 };
 

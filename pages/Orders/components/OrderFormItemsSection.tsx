@@ -2,7 +2,7 @@ import React from 'react';
 import { Package, DollarSign, Plus, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Product } from '@/types';
-import { FormItem } from './OrderForm';
+import { FormItem } from './modals/OrderForm';
 
 interface OrderItemsSectionProps {
   items: FormItem[];

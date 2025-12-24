@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import OrderListMobile from './mobile/OrderListMobile';
 import OrderListDesktop from './desktop/OrderListDesktop';
 import OrderFiltersToolbar from './OrderFiltersToolbar';
-import OrderFiltersModal, { OrderFiltersState } from './OrderFiltersModal';
+import OrderFiltersModal, { OrderFiltersState } from './modals/OrderFiltersModal';
 import { parseDateValue } from '@/utils/dateUtil';
 
 interface OrderListProps {

@@ -4,10 +4,10 @@ import { useOrders } from '@/contexts/OrderContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Order } from '@/types';
 import OrderList from './components/OrderList';
-import OrderDetail from '@/pages/Orders/components/OrderDetail';
-import OrderForm from '@/pages/Orders/components/OrderForm';
+import OrderDetail from '@/pages/Orders/components/modals/OrderDetail';
+import OrderForm from '@/pages/Orders/components/modals/OrderForm';
 import ConfirmModal from '@/components/ConfirmModal';
-import ExportModal from '@/pages/Orders/components/ExportModal';
+import ExportModal from '@/pages/Orders/components/modals/ExportModal';
 import toast from 'react-hot-toast';
 
 const OrdersPage: React.FC = () => {
@@ -135,22 +135,20 @@ const OrdersPage: React.FC = () => {
         />
       )}
 
-      {selectedOrder && (
-        <OrderDetail 
-          order={selectedOrder} 
-          onClose={() => setSelectedOrder(null)}
-          onEdit={() => handleEditOrder(selectedOrder)}
-          onUpdateOrder={modifyOrder}
-        />
-      )}
+      <OrderDetail 
+        isOpen={!!selectedOrder}
+        order={selectedOrder} 
+        onClose={() => setSelectedOrder(null)}
+        onEdit={() => selectedOrder && handleEditOrder(selectedOrder)}
+        onUpdateOrder={modifyOrder}
+      />
 
-      {isOrderFormOpen && (
-        <OrderForm 
-          initialData={editingOrder} 
-          onSave={handleSaveOrder} 
-          onCancel={() => setIsOrderFormOpen(false)} 
-        />
-      )}
+      <OrderForm 
+        isOpen={isOrderFormOpen}
+        initialData={editingOrder} 
+        onSave={handleSaveOrder} 
+        onCancel={() => setIsOrderFormOpen(false)} 
+      />
 
       <ExportModal 
         isOpen={isExportModalOpen}

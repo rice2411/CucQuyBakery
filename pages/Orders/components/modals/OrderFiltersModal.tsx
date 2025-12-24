@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, SlidersHorizontal, Calendar, Search, Package, RotateCcw } from 'lucide-react';
 import { OrderStatus, PaymentStatus } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useFadeAnimation } from '@/hooks/useFadeAnimation';
 
 export interface OrderFiltersState {
   searchTerm: string;
@@ -26,6 +27,7 @@ interface OrderFiltersModalProps {
 const OrderFiltersModal: React.FC<OrderFiltersModalProps> = ({ isOpen, initialValues, onClose, onApply }) => {
   const { t, language } = useLanguage();
   const [values, setValues] = useState<OrderFiltersState>(initialValues);
+  const { show, isAnimating } = useFadeAnimation(isOpen, true);
 
   const monthOptions = useMemo(() => {
     const options: { value: string; label: string }[] = [];
@@ -96,12 +98,17 @@ const OrderFiltersModal: React.FC<OrderFiltersModalProps> = ({ isOpen, initialVa
     onApply(defaultValues);
   };
 
-  if (!isOpen) return null;
+  if (!show && !isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-xl max-h-[100vh] sm:max-h-[85vh] border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
+      <div 
+        className={`fixed inset-0 bg-black/40 transition-opacity duration-300 ease-out ${isAnimating ? 'opacity-100' : 'opacity-0'}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div className={`bg-white dark:bg-slate-800 rounded-none sm:rounded-2xl shadow-xl w-full h-full sm:max-w-xl sm:h-auto sm:max-h-[85vh] border-0 sm:border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden pt-16 pb-20 sm:pt-0 sm:pb-0 relative transform transition-all duration-300 ease-out ${isAnimating ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="w-5 h-5 text-orange-500" />
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{t('orders.filters')}</h3>
@@ -115,7 +122,7 @@ const OrderFiltersModal: React.FC<OrderFiltersModalProps> = ({ isOpen, initialVa
           </button>
         </div>
 
-        <div className="p-5 space-y-4 overflow-y-auto max-h-[65vh] sm:max-h-[60vh]">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0">
           {/* Search */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">{t('orders.searchPlaceholder')}</label>
@@ -268,24 +275,25 @@ const OrderFiltersModal: React.FC<OrderFiltersModalProps> = ({ isOpen, initialVa
           </div>
         </div>
 
-        <div className="flex justify-between gap-3 px-5 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <div className="flex justify-between gap-3 px-5 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex-shrink-0 shadow-lg">
           <button
             onClick={handleReset}
-            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
+            className="px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2 touch-manipulation active:scale-95"
           >
             <RotateCcw className="w-4 h-4" />
-            {t('common.reset') ?? 'Reset'}
+            <span className="hidden sm:inline">{t('common.reset') ?? 'Reset'}</span>
+            <span className="sm:hidden">{t('common.reset') ?? 'Reset'}</span>
           </button>
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors touch-manipulation active:scale-95"
             >
               {t('common.cancel') ?? 'Cancel'}
             </button>
             <button
               onClick={handleApply}
-              className="px-4 py-2 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg shadow-sm transition-colors"
+              className="px-6 py-3 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg shadow-sm transition-colors touch-manipulation active:scale-95 min-w-[80px]"
             >
               {t('common.apply') ?? 'Apply'}
             </button>

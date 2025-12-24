@@ -6,20 +6,21 @@ import { generateOrderAnalysis } from '@/services/geminiService';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatVND } from '@/utils/currencyUtil';
 import { generateQRCodeImage } from '@/utils/orderUtils';
+import BaseSlidePanel from '@/components/BaseSlidePanel';
 interface OrderDetailProps {
+  isOpen: boolean;
   order: Order | null;
   onClose: () => void;
   onEdit?: () => void;
   onUpdateOrder?: (id: string, data: Partial<Order>) => Promise<void>;
 }
 
-const OrderDetail: React.FC<OrderDetailProps> = ({ order, onClose, onEdit, onUpdateOrder }) => {
+const OrderDetail: React.FC<OrderDetailProps> = ({ isOpen, order, onClose, onEdit, onUpdateOrder }) => {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'details' | 'ai'>('details');
   const [aiResponse, setAiResponse] = useState<string>('');
   const [loadingAi, setLoadingAi] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<'email' | 'risk' | 'summary' | null>(null);
-  const [isClosing, setIsClosing] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [updatingPayment, setUpdatingPayment] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
@@ -31,13 +32,6 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, onClose, onEdit, onUpd
 
   const currentOrder = localOrder || order;
   if (!currentOrder) return null;
-
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 280); 
-  };
 
   const handleAiAction = async (type: 'email' | 'risk' | 'summary') => {
     setSelectedPrompt(type);
@@ -77,68 +71,87 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, onClose, onEdit, onUpd
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
-      <div 
-        className={`absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${isClosing ? 'opacity-0' : 'opacity-100'}`} 
-        onClick={handleClose}
-      ></div>
+  const headerContent = (
+    <div className="flex items-start justify-between w-full">
+      <div>
+        <div className="flex items-center gap-3 mb-1">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{currentOrder.orderNumber || `Order #${currentOrder.id}`}</h2>
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[currentOrder.status]}`}>
+            {currentOrder.status}
+          </span>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {t('detail.placedOn')} {new Date(currentOrder.createdAt.toDate()).toLocaleString()}
+        </p>
+        {currentOrder.deliveryDate && (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Ngày nhận hàng: {new Date(currentOrder.deliveryDate).toLocaleDateString()}
+            {currentOrder.deliveryTime && ` • ${currentOrder.deliveryTime}`}
+          </p>
+        )}
+      </div>
+      <button
+        onClick={onClose}
+        className="p-2 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-full text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-white transition-colors"
+      >
+        <X className="w-5 h-5" />
+      </button>
+    </div>
+  );
 
-      <div className="absolute inset-y-0 right-0 max-w-2xl w-full flex pointer-events-none">
-        <div 
-          className={`w-full h-full bg-white dark:bg-slate-800 shadow-2xl flex flex-col pointer-events-auto transition-colors duration-200 ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
+  const footer = (
+    <div className="flex justify-end gap-3">
+      <button
+        onClick={onClose}
+        className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+      >
+        {t('detail.close')}
+      </button>
+      {onEdit && (
+        <button
+          onClick={onEdit}
+          className="px-4 py-2 bg-orange-600 dark:bg-orange-500 rounded-lg text-sm font-medium text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-sm shadow-orange-200 dark:shadow-none transition-colors"
         >
-          <div className="px-6 py-6 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between bg-white dark:bg-slate-800 transition-colors">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{currentOrder.orderNumber || `Order #${currentOrder.id}`}</h2>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[currentOrder.status]}`}>
-                  {currentOrder.status}
-                </span>
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {t('detail.placedOn')} {new Date(currentOrder.createdAt.toDate()).toLocaleString()}
-              </p>
-              {currentOrder.deliveryDate && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Ngày nhận hàng: {new Date(currentOrder.deliveryDate).toLocaleDateString()}
-                  {currentOrder.deliveryTime && ` • ${currentOrder.deliveryTime}`}
-                </p>
-              )}
-            </div>
-            <button 
-              onClick={handleClose} 
-              className="p-2 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-full text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          {t('detail.edit')}
+        </button>
+      )}
+    </div>
+  );
 
-          <div className="border-b border-slate-100 dark:border-slate-700 px-6 flex space-x-6 bg-white dark:bg-slate-800 transition-colors">
-            <button 
-              onClick={() => setActiveTab('details')}
-              className={`py-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'details' 
-                ? 'border-orange-600 text-orange-600 dark:text-orange-400' 
+  return (
+    <BaseSlidePanel
+      isOpen={isOpen && !!order}
+      onClose={onClose}
+      maxWidth="2xl"
+      headerContent={headerContent}
+      footer={footer}
+    >
+      <div className="flex flex-col h-full">
+        <div className="border-b border-slate-100 dark:border-slate-700 px-6 flex space-x-6 bg-white dark:bg-slate-800 transition-colors">
+          <button
+            onClick={() => setActiveTab('details')}
+            className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'details'
+                ? 'border-orange-600 text-orange-600 dark:text-orange-400'
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
-            >
-              {t('detail.tabDetails')}
-            </button>
-            <button 
-              onClick={() => setActiveTab('ai')}
-              className={`py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                activeTab === 'ai' 
-                ? 'border-rose-600 text-rose-600 dark:text-rose-400' 
+            }`}
+          >
+            {t('detail.tabDetails')}
+          </button>
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === 'ai'
+                ? 'border-rose-600 text-rose-600 dark:text-rose-400'
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              {t('detail.tabAi')}
-            </button>
-          </div>
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            {t('detail.tabAi')}
+          </button>
+        </div>
 
-          <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-6 transition-colors">
+        <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 p-6 transition-colors">
             {activeTab === 'details' ? (
               <div className="space-y-6">
                 <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
@@ -486,24 +499,9 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ order, onClose, onEdit, onUpd
                 </div>
               </div>
             )}
-          </div>
-          
-          <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex justify-end gap-3 transition-colors">
-             <button onClick={handleClose} className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-               {t('detail.close')}
-             </button>
-             {onEdit && (
-               <button 
-                  onClick={onEdit} 
-                  className="px-4 py-2 bg-orange-600 dark:bg-orange-500 rounded-lg text-sm font-medium text-white hover:bg-orange-700 dark:hover:bg-orange-600 shadow-sm shadow-orange-200 dark:shadow-none transition-colors"
-                >
-                  {t('detail.edit')}
-               </button>
-             )}
-          </div>
         </div>
       </div>
-    </div>
+    </BaseSlidePanel>
   );
 };
 
