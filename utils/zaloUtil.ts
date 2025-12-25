@@ -1,6 +1,7 @@
 import { Order } from "@/types";
 import { parseDateValue } from "./dateUtil";
 import { formatVND } from "./currencyUtil";
+import { getOrderTotal } from "./orderUtils";
 
 export const formatDate = (date: Date | null): string => {
   if (!date) return '(không có)';
@@ -50,7 +51,7 @@ export const formatOrderMessage = (order: any): string => {
     message += `\n`;
   }
 
-  message += `💰 Tổng tiền: ${formatVND(order.total)}
+  message += `💰 Tổng tiền: ${formatVND(getOrderTotal(order))}
 `;
 
   return message;
@@ -61,7 +62,7 @@ export const formatUnpaidOrdersMessage = (orders: Order[]): string => {
     return `✅ Không có đơn hàng chưa thanh toán.`;
   }
 
-  const totalUnpaid = orders.reduce((sum, order) => sum + order.total, 0);
+  const totalUnpaid = orders.reduce((sum, order) => sum + getOrderTotal(order), 0);
   let message = `⚠️ == THÔNG BÁO ĐƠN HÀNG CHƯA THANH TOÁN ==\n\n`;
   message += `📊 Tổng số đơn: ${orders.length}\n`;
   message += `💰 Tổng tiền: ${formatVND(totalUnpaid)}\n\n`;
@@ -73,7 +74,7 @@ export const formatUnpaidOrdersMessage = (orders: Order[]): string => {
     message += `   👤 ${order.customer?.name || '(không có)'}\n`;
     message += `   📞 ${order.customer?.phone || '(không có)'}\n`;
     message += `   🕒 ${formatDate(orderDate)}\n`;
-    message += `   💰 ${formatVND(order.total)}\n`;
+    message += `   💰 ${formatVND(getOrderTotal(order))}\n`;
   });
 
   return message;
@@ -84,7 +85,7 @@ export const formatPendingOrdersMessage = (orders: Order[]): string => {
     return `✅ Không có đơn hàng cần xử lý.`;
   }
 
-  const totalPending = orders.reduce((sum, order) => sum + order.total, 0);
+  const totalPending = orders.reduce((sum, order) => sum + getOrderTotal(order), 0);
   let message = `⚠️ == THÔNG BÁO ĐƠN HÀNG CẦN XỬ LÝ ==\n\n`;
   message += `📊 Tổng số đơn: ${orders.length}\n`;
   message += `💰 Tổng tiền: ${formatVND(totalPending)}\n\n`;
@@ -109,7 +110,7 @@ export const formatPendingOrdersMessage = (orders: Order[]): string => {
     message += `   📦 Số lượng sản phẩm: ${totalItems} ${totalItems === 1 ? 'sản phẩm' : 'sản phẩm'}\n`;
     message += `   📦 Trạng thái: ${order.status}\n`;
     message += `   💳 Thanh toán: ${order.paymentStatus}\n`;
-    message += `   💰 ${formatVND(order.total)}\n`;
+    message += `   💰 ${formatVND(getOrderTotal(order))}\n`;
   });
 
   return message;
@@ -153,7 +154,7 @@ export const formatDeliveryDueMessage = (orders: Order[], targetDate?: Date): st
       });
     }
     
-    message += `   💰 ${formatVND(order.total)}\n`;
+    message += `   💰 ${formatVND(getOrderTotal(order))}\n`;
   });
 
   return message;

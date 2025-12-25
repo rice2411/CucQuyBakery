@@ -5,7 +5,7 @@ import { STATUS_COLORS } from '@/constant/order';
 import { generateOrderAnalysis } from '@/services/geminiService';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatVND } from '@/utils/currencyUtil';
-import { generateQRCodeImage } from '@/utils/orderUtils';
+import { generateQRCodeImage, getOrderTotal } from '@/utils/orderUtils';
 import BaseSlidePanel from '@/components/BaseSlidePanel';
 interface OrderDetailProps {
   isOpen: boolean;
@@ -50,7 +50,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({ isOpen, order, onClose, onEdi
   
   const subtotal = currentOrder.items.reduce((sum, item) => sum + calculateLineItemTotal(item), 0);
   
-  const finalTotal = subtotal + shippingCost;
+  const finalTotal = getOrderTotal(currentOrder);
 
   const description = `${currentOrder.orderNumber}`;
   const qrUrl =generateQRCodeImage(description, finalTotal);

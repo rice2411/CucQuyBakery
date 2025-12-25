@@ -1,7 +1,30 @@
 
 
 import * as XLSX from 'xlsx-js-style';
-import { Order } from '@/types/order';
+import { Order, OrderItem } from '@/types/order';
+
+/**
+ * Tính tổng giá trị đơn hàng từ items và shipping cost
+ * @param items - Danh sách items trong đơn hàng
+ * @param shippingCost - Chi phí vận chuyển
+ * @returns Tổng giá trị đơn hàng
+ */
+export const calculateOrderTotal = (items: OrderItem[], shippingCost: number = 0): number => {
+  const subtotal = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
+  return subtotal + Number(shippingCost);
+};
+
+/**
+ * Lấy tổng giá trị đơn hàng (ưu tiên dùng order.total, nếu không có thì tính lại)
+ * @param order - Đơn hàng
+ * @returns Tổng giá trị đơn hàng
+ */
+export const getOrderTotal = (order: Order): number => {
+  if (order.total && order.total > 0) {
+    return Number(order.total);
+  }
+  return calculateOrderTotal(order.items || [], order.shippingCost || 0);
+};
 
 /**
  * Tạo URL ảnh QR code thanh toán
@@ -128,7 +151,7 @@ export const exportOrdersToExcel = (
     // 1. Overall Sheet
     const overallData = monthKeys.map(month => {
       const monthOrders = groupedOrders[month];
-      const revenue = monthOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+      const revenue = monthOrders.reduce((sum, o) => sum + getOrderTotal(o), 0);
       const uniqueCustomers = new Set(monthOrders.map(o => o.customer.id)).size;
       return {
         "Month": month,
@@ -160,7 +183,7 @@ export const exportOrdersToExcel = (
       });
 
       // Calculate Total Revenue for this sheet
-      const totalRevenue = monthOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+      const totalRevenue = monthOrders.reduce((sum, o) => sum + getOrderTotal(o), 0);
       
       // Create Footer Row
       const footerRow: any = {};
@@ -188,7 +211,7 @@ export const exportOrdersToExcel = (
     });
 
     // Calculate Total Revenue
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalRevenue = orders.reduce((sum, o) => sum + getOrderTotal(o), 0);
       
     // Create Footer Row
     const footerRow: any = {};

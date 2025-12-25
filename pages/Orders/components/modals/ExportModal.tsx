@@ -3,7 +3,7 @@ import { Download, Calendar, Eye, Settings, Check, ChevronDown, ArrowRight, Tabl
 import { useLanguage } from '@/contexts/LanguageContext';
 import BaseModal from '@/components/BaseModal';
 import { Order } from '@/types';
-import { exportOrdersToExcel, ExportColumn } from '@/utils/orderUtils';
+import { exportOrdersToExcel, ExportColumn, getOrderTotal } from '@/utils/orderUtils';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -19,9 +19,9 @@ const AVAILABLE_COLUMNS: ExportColumn[] = [
   { id: 'phone', label: 'Phone', field: (o) => `'${o.customer.phone}` }, // Add quote to force string in Excel
   { id: 'address', label: 'Address', field: (o) => o.customer.address },
   { id: 'items', label: 'Products', field: (o) => o.items.map(i => `${i.name} (x${i.quantity})`).join('; ') },
-  { id: 'subtotal', label: 'Subtotal', field: (o) => (o.total - (o.shippingCost || 0)) },
+  { id: 'subtotal', label: 'Subtotal', field: (o) => getOrderTotal(o) - (o.shippingCost || 0) },
   { id: 'shipping', label: 'Shipping', field: (o) => o.shippingCost || 0 },
-  { id: 'total', label: 'Total', field: (o) => o.total },
+  { id: 'total', label: 'Total', field: (o) => getOrderTotal(o) },
   { id: 'status', label: 'Status', field: (o) => o.status },
   { id: 'payment', label: 'Payment Status', field: (o) => o.paymentStatus },
   { id: 'paymentMethod', label: 'Payment Method', field: (o) => o.paymentMethod || '' },
@@ -159,7 +159,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, orders }) =>
       if (!isMultiSheet) return [];
       return monthKeys.map(month => {
           const monthOrders = groupedOrders[month];
-          const revenue = monthOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+          const revenue = monthOrders.reduce((sum, o) => sum + getOrderTotal(o), 0);
           const uniqueCustomers = new Set(monthOrders.map(o => o.customer.id)).size;
           return {
             month,
