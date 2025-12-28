@@ -23,6 +23,9 @@ import {
 } from "@/types";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSuppliers } from "@/contexts/SupplierContext";
+import AutocompleteInput, {
+  AutocompleteOption,
+} from "@/components/AutocompleteInput";
 
 interface IngredientFormProps {
   isOpen: boolean;
@@ -64,13 +67,11 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
   const [historyNote, setHistoryNote] = useState("");
   const [historySupplierId, setHistorySupplierId] = useState("");
   const [historySupplierInput, setHistorySupplierInput] = useState("");
-  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
   const [historyDate, setHistoryDate] = useState(() =>
     new Date().toISOString().slice(0, 10)
   );
   const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
   const [historySearch, setHistorySearch] = useState("");
-  const supplierRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -108,19 +109,6 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
     }
     setError(null);
   }, [initialData, isOpen]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        supplierRef.current &&
-        !supplierRef.current.contains(event.target as Node)
-      ) {
-        setShowSupplierDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const sortedHistory = useMemo(
     () =>
@@ -193,17 +181,14 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
     return 0;
   }, [productWeight, historyImportQuantity, unit]);
 
-  const filteredSuppliers = useMemo(
+  const supplierOptions = useMemo<AutocompleteOption[]>(
     () =>
-      suppliers
-        .filter((s) => {
-          if (!historySupplierInput.trim()) return true;
-          return s.name
-            .toLowerCase()
-            .includes(historySupplierInput.toLowerCase());
-        })
-        .slice(0, 6),
-    [suppliers, historySupplierInput]
+      suppliers.map((s) => ({
+        id: s.id,
+        label: s.name,
+        subtitle: s.phone,
+      })),
+    [suppliers]
   );
 
   const computedQuantity = useMemo(() => {
@@ -246,10 +231,9 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
     return map;
   }, [history, initialQuantity]);
 
-  const handleSelectSupplier = (id: string, name: string) => {
-    setHistorySupplierId(id);
-    setHistorySupplierInput(name);
-    setShowSupplierDropdown(false);
+  const handleSelectSupplier = (option: AutocompleteOption) => {
+    setHistorySupplierId(option.id);
+    setHistorySupplierInput(option.label);
   };
 
   // Handle edit history item - load data into form
@@ -772,64 +756,19 @@ const IngredientForm: React.FC<IngredientFormProps> = ({
                   {/* Supplier Field */}
                   {historyType === IngredientHistoryType.IMPORT && (
                     <div className="mb-6">
-                      <div className="relative" ref={supplierRef}>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                          {t("ingredients.form.supplier")}{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                          <input
-                            type="text"
-                            value={historySupplierInput}
-                            onChange={(e) => {
-                              setHistorySupplierInput(e.target.value);
-                              setShowSupplierDropdown(true);
-                              setHistorySupplierId("");
-                            }}
-                            onFocus={() => setShowSupplierDropdown(true)}
-                            disabled={loading}
-                            className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
-                            placeholder={t(
-                              "ingredients.form.supplierPlaceholder"
-                            )}
-                            autoComplete="off"
-                          />
-                        </div>
-                        {showSupplierDropdown &&
-                          filteredSuppliers.length > 0 && (
-                            <div className="absolute z-20 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                              <ul className="py-1">
-                                {filteredSuppliers.map((sup) => (
-                                  <li
-                                    key={sup.id}
-                                    onClick={() =>
-                                      handleSelectSupplier(sup.id, sup.name)
-                                    }
-                                    className="px-4 py-2 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer transition-colors group"
-                                  >
-                                    <div className="flex justify-between items-center">
-                                      <div>
-                                        <p className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-400">
-                                          {sup.name}
-                                        </p>
-                                        {sup.phone && (
-                                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            {sup.phone}
-                                          </p>
-                                        )}
-                                      </div>
-                                      {sup.name.toLowerCase() ===
-                                        historySupplierInput.toLowerCase() && (
-                                        <Check className="w-4 h-4 text-orange-500" />
-                                      )}
-                                    </div>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                      </div>
+                      <AutocompleteInput
+                        value={historySupplierInput}
+                        onChange={(value) => {
+                          setHistorySupplierInput(value);
+                          setHistorySupplierId("");
+                        }}
+                        onSelect={handleSelectSupplier}
+                        options={supplierOptions}
+                        placeholder={t("ingredients.form.supplierPlaceholder")}
+                        label={t("ingredients.form.supplier")}
+                        required
+                        loading={loading}
+                      />
                     </div>
                   )}
 
