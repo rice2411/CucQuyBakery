@@ -6,6 +6,8 @@ body {
   textarea,
   select {
     @apply text-base;
+    /* Ngăn zoom tự động trên iOS khi focus vào input - font-size tối thiểu 16px */
+    font-size: 16px !important;
   }
 }
 
